@@ -1,0 +1,80 @@
+{
+  "template": "daily-intelligence",
+  "meta": {
+    "title": "AI日报6.23｜GPT-5发布·DeepSeek开源",
+    "digest": "今日AI领域重大新闻速览",
+    "date": "2026-06-23",
+    "date_cn": "2026 年 6 月 23 日 · 星期二",
+    "date_short": "2026.06.23",
+    "author": "39Claw",
+    "open_comment": 1,
+    "source_count": 2,
+    "news_count": 2,
+    "cover_image": {
+      "prompt": "Futuristic AI daily news cover for 2026.06.23. Theme: AI日报6.23｜GPT-5发布·DeepSeek开源. Dark blue gradient, neural network nodes, holographic interface, editorial magazine cover, 16:9.",
+      "local_path": "build/images/cover-2026-06-23.png"
+    }
+  },
+  "headline": {
+    "title": "GPT-5 正式发布",
+    "body": [
+      "OpenAI 今日正式发布 GPT-5 模型",
+      "性能较 GPT-4o 提升显著"
+    ],
+    "source": "OpenAI",
+    "image": {
+      "prompt": "Futuristic AI news illustration about GPT-5 正式发布. OpenAI 今日正式发布 GPT-5 模型. Modern research lab, holographic data panels, blue and white palette, professional editorial image, 16:9.",
+      "caption": "GPT-5 正式发布",
+      "local_path": "build/images/headline-2026-06-23.png"
+    }
+  },
+  "sections": [
+    {
+      "en": "BRIEFING",
+      "cn": "要闻",
+      "blocks": [
+        {
+          "type": "card",
+          "number": "01",
+          "title": "GPT-5 发布",
+          "body": "OpenAI 正式发布 GPT-5，多模态能力大幅提升",
+          "source": "OpenAI"
+        },
+        {
+          "type": "card",
+          "number": "02",
+          "title": "DeepSeek 开源",
+          "body": "DeepSeek 发布开源模型，训练成本降低90%",
+          "source": "DeepSeek"
+        }
+      ],
+      "image": {
+        "prompt": "Futuristic AI news illustration about GPT-5 发布. 要闻. OpenAI 正式发布 GPT-5，多模态能力大幅提升. Modern research lab, holographic data panels, blue and white palette, professional editorial image, 16:9.",
+        "caption": "GPT-5 发布",
+        "local_path": "build/images/section-01-gpt-5.png"
+      }
+    }
+  ],
+  "cta": "你最关注哪一点？欢迎留言讨论。",
+  "_plans": {
+    "images": [
+      {
+        "target": "cover",
+        "prompt": "Futuristic AI daily news cover for 2026.06.23. Theme: AI日报6.23｜GPT-5发布·DeepSeek开源. Dark blue gradient, neural network nodes, holographic interface, editorial magazine cover, 16:9.",
+        "local_path": "build/images/cover-2026-06-23.png"
+      },
+      {
+        "target": "headline",
+        "prompt": "Futuristic AI news illustration about GPT-5 正式发布. OpenAI 今日正式发布 GPT-5 模型. Modern research lab, holographic data panels, blue and white palette, professional editorial image, 16:9.",
+        "caption": "GPT-5 正式发布",
+        "local_path": "build/images/headline-2026-06-23.png"
+      },
+      {
+        "target": "section[0]",
+        "prompt": "Futuristic AI news illustration about GPT-5 发布. 要闻. OpenAI 正式发布 GPT-5，多模态能力大幅提升. Modern research lab, holographic data panels, blue and white palette, professional editorial image, 16:9.",
+        "caption": "GPT-5 发布",
+        "local_path": "build/images/section-01-gpt-5.png"
+      }
+    ]
+  }
+}

@@ -47,11 +47,14 @@ if "%PYTHON_CMD%"=="" (
 )
 
 echo        Python found: %PYTHON_CMD%
+"%PYTHON_CMD%" --version
 
 :: ============================================================
 ::  STEP 2: Install dependencies
 :: ============================================================
+echo.
 echo [2/3] Installing dependencies ...
+echo.
 
 set USE_VENV=0
 set PIP_CMD=%PYTHON_CMD% -m pip
@@ -66,7 +69,7 @@ if exist "%BASEDIR%apps\api\venv\Scripts\activate.bat" (
     :: Try creating venv
     echo        Trying to create virtual environment ...
     cd /d "%BASEDIR%apps\api"
-    "%PYTHON_CMD%" -m venv venv 2>nul
+    "%PYTHON_CMD%" -m venv venv
     if not errorlevel 1 (
         if exist "venv\Scripts\activate.bat" (
             echo        Virtual environment created.
@@ -74,27 +77,57 @@ if exist "%BASEDIR%apps\api\venv\Scripts\activate.bat" (
             set USE_VENV=1
             set PIP_CMD=pip
         )
+    ) else (
+        echo        [INFO] venv creation failed, will install directly.
     )
 )
 
 if "%USE_VENV%"=="0" (
-    echo        venv not available, installing packages directly ...
-    echo        This may take a few minutes ...
+    echo        Installing packages directly (no venv)...
 )
 
+echo.
 echo        Upgrading pip ...
-%PIP_CMD% install --upgrade pip --quiet 2>nul
+%PIP_CMD% install --upgrade pip
 
-echo        Installing packages ...
-%PIP_CMD% install -r "%BASEDIR%apps\api\requirements.txt" --quiet 2>nul
+echo.
+echo        Installing packages (this may take a few minutes) ...
+%PIP_CMD% install -r "%BASEDIR%apps\api\requirements.txt"
 if errorlevel 1 (
-    echo        [WARN] Some packages failed, retrying without quiet mode ...
-    %PIP_CMD% install -r "%BASEDIR%apps\api\requirements.txt"
+    echo.
+    echo        [ERROR] Failed to install some packages!
+    echo        Please check the error messages above.
+    echo.
+    pause
+    exit /b 1
+)
+
+echo.
+echo        All packages installed successfully.
+
+:: ============================================================
+::  STEP 3: Verify critical imports
+:: ============================================================
+echo.
+echo        Verifying installation ...
+if "%USE_VENV%"=="1" (
+    python -c "import fastapi; import uvicorn; import sqlalchemy; import aiosqlite; print('        All critical imports OK')"
+) else (
+    "%PYTHON_CMD%" -c "import fastapi; import uvicorn; import sqlalchemy; import aiosqlite; print('        All critical imports OK')"
+)
+if errorlevel 1 (
+    echo.
+    echo        [ERROR] Critical Python packages are missing!
+    echo        Please check the error messages above.
+    echo.
+    pause
+    exit /b 1
 )
 
 :: ============================================================
-::  STEP 3: Initialize database and start
+::  STEP 4: Initialize database and start
 :: ============================================================
+echo.
 echo [3/3] Initializing database ...
 cd /d "%BASEDIR%apps\api"
 
@@ -108,6 +141,8 @@ if not exist "dev.db" (
     if errorlevel 1 (
         echo        [WARN] Seed failed, trying to continue...
     )
+) else (
+    echo        Database already exists, skipping seed.
 )
 
 echo.
@@ -123,21 +158,44 @@ if "%USE_VENV%"=="1" (
 )
 
 echo Waiting for server to start ...
-ping -n 6 127.0.0.1 >nul
+ping -n 8 127.0.0.1 >nul
 
 echo.
 echo ============================================
-echo    Server started!
-echo ============================================
-echo.
-echo    Open browser: http://localhost:8000
-echo.
-echo    Login: editor@test.com / password123
-echo.
-echo    To stop: close the ContentOS-API window
+echo    Checking server ...
 echo ============================================
 echo.
 
-start "" "http://localhost:8000"
+:: Try to connect to the server
+if "%USE_VENV%"=="1" (
+    python -c "import urllib.request; r=urllib.request.urlopen('http://localhost:8000/health'); print('        Server is running! Status:', r.read().decode())" 2>nul
+) else (
+    "%PYTHON_CMD%" -c "import urllib.request; r=urllib.request.urlopen('http://localhost:8000/health'); print('        Server is running! Status:', r.read().decode())" 2>nul
+)
+
+if errorlevel 1 (
+    echo.
+    echo        [WARN] Could not connect to server.
+    echo        Check the ContentOS-API window for error messages.
+    echo        Common issues:
+    echo          - Port 8000 already in use
+    echo          - Python packages not fully installed
+    echo.
+) else (
+    echo.
+    echo ============================================
+    echo    Server started successfully!
+    echo ============================================
+    echo.
+    echo    Open browser: http://localhost:8000
+    echo.
+    echo    Login: editor@test.com / password123
+    echo.
+    echo    To stop: close the ContentOS-API window
+    echo ============================================
+    echo.
+
+    start "" "http://localhost:8000"
+)
 
 pause

@@ -19,6 +19,7 @@ python --version >nul 2>&1
 if not errorlevel 1 set PYTHON_CMD=python
 
 :: Check common install locations (most likely first)
+if "%PYTHON_CMD%"=="" if exist "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\python.exe" set PYTHON_CMD=C:\Users\Administrator\AppData\Local\Programs\Python\Python38\python.exe
 if "%PYTHON_CMD%"=="" if exist "%LOCALAPPDATA%\Programs\Python\Python38\python.exe" set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python38\python.exe
 if "%PYTHON_CMD%"=="" if exist "%LOCALAPPDATA%\Programs\Python\Python310\python.exe" set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python310\python.exe
 if "%PYTHON_CMD%"=="" if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python311\python.exe

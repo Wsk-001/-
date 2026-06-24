@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content OS Dashboard</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f172a;--card:#1e293b;--primary:#3b82f6;--success:#10b981;
+  --error:#ef4444;--warning:#f59e0b;--text:#e2e8f0;--muted:#94a3b8;
+  --border:#334155;--card-hover:#263548;--radius:8px;--radius-sm:6px;
+  --shadow:0 1px 3px rgba(0,0,0,0.3);
+}
+html,body{height:100%;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+#app{display:flex;height:100vh}
+/* Sidebar */
+.sidebar{width:220px;min-width:220px;background:#0c1322;border-right:1px solid var(--border);display:flex;flex-direction:column;padding:0}
+.sidebar-logo{padding:20px 18px;font-size:18px;font-weight:700;color:var(--primary);letter-spacing:0.5px;border-bottom:1px solid var(--border)}
+.sidebar-nav{flex:1;padding:12px 0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;cursor:pointer;color:var(--muted);font-size:14px;transition:all .15s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(59,130,246,0.08);color:var(--text)}
+.nav-item.active{color:var(--primary);background:rgba(59,130,246,0.1);border-left-color:var(--primary)}
+.nav-icon{width:18px;text-align:center;font-size:15px}
+.sidebar-footer{padding:16px 18px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:52px;min-height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;background:rgba(15,23,42,0.8)}
+.topbar h1{font-size:16px;font-weight:600}
+.topbar-status{margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--success)}
+.content{flex:1;overflow-y:auto;padding:24px}
+/* Cards */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px;transition:background .15s}
+.card:hover{background:var(--card-hover)}
+.card-title{font-size:15px;font-weight:600;margin-bottom:6px}
+.card-meta{font-size:12px;color:var(--muted)}
+/* Badges */
+.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.3px}
+.badge-running{background:rgba(59,130,246,0.2);color:#60a5fa}
+.badge-success{background:rgba(16,185,129,0.2);color:#34d399}
+.badge-failed{background:rgba(239,68,68,0.2);color:#f87171}
+.badge-queued{background:rgba(148,163,184,0.2);color:#94a3b8}
+.badge-pending{background:rgba(148,163,184,0.15);color:#94a3b8}
+/* Progress */
+.progress-wrap{height:6px;background:#334155;border-radius:3px;margin:8px 0;overflow:hidden}
+.progress-bar{height:100%;border-radius:3px;transition:width .4s;background:var(--primary)}
+.progress-bar.complete{background:var(--success)}
+.progress-bar.error{background:var(--error)}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:#2563eb}
+.btn-secondary{background:#334155;color:var(--text)}
+.btn-secondary:hover{background:#475569}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{background:#059669}
+.btn-danger{background:var(--error);color:#fff}
+.btn-danger:hover{background:#dc2626}
+.btn-sm{padding:4px 10px;font-size:12px}
+/* Forms */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.form-control{width:100%;padding:8px 12px;background:#0f172a;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;outline:none;transition:border .15s}
+.form-control:focus{border-color:var(--primary)}
+textarea.form-control{min-height:120px;resize:vertical;font-family:'Courier New',monospace;font-size:12px}
+select.form-control{appearance:auto}
+/* Timeline */
+.timeline{margin-left:16px;border-left:2px solid var(--border);padding-left:20px}
+.timeline-item{position:relative;padding-bottom:16px}
+.timeline-item::before{content:'';position:absolute;left:-26px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--border);border:2px solid var(--bg)}
+.timeline-item.step-success::before{background:var(--success)}
+.timeline-item.step-running::before{background:var(--primary);box-shadow:0 0 6px var(--primary)}
+.timeline-item.step-failed::before{background:var(--error)}
+.step-header{display:flex;align-items:center;gap:8px;cursor:pointer}
+.step-name{font-size:13px;font-weight:500}
+.step-duration{font-size:11px;color:var(--muted)}
+.step-output{margin-top:8px;background:#0f172a;border-radius:var(--radius-sm);padding:10px;font-size:12px;font-family:'Courier New',monospace;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;color:var(--muted)}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:var(--card);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.5);width:480px;max-width:90vw;max-height:80vh;overflow-y:auto;padding:24px}
+.modal h2{font-size:18px;margin-bottom:16px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+/* Code block */
+.code-block{background:#0f172a;border-radius:var(--radius-sm);padding:12px;font-size:12px;font-family:'Courier New',monospace;white-space:pre-wrap;word-break:break-all;max-height:400px;overflow-y:auto;color:var(--muted);border:1px solid var(--border)}
+/* Grid */
+.grid{display:grid;gap:12px}
+.grid-2{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+/* Iframe */
+.preview-frame{width:100%;height:500px;border:1px solid var(--border);border-radius:var(--radius);background:#fff}
+/* Tabs within pages */
+.sub-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
+.sub-tab{padding:8px 16px;cursor:pointer;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s}
+.sub-tab:hover{color:var(--text)}
+.sub-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+/* Spinner */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Toast */
+.toast-container{position:fixed;top:16px;right:16px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{padding:10px 16px;border-radius:var(--radius-sm);font-size:13px;box-shadow:var(--shadow);animation:fadeIn .2s}
+.toast-success{background:rgba(16,185,129,0.9);color:#fff}
+.toast-error{background:rgba(239,68,68,0.9);color:#fff}
+.toast-info{background:rgba(59,130,246,0.9);color:#fff}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+/* Empty state */
+.empty-state{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty-state svg{margin-bottom:12px;opacity:0.3}
+.empty-state p{font-size:14px}
+/* Scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#475569}
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{width:56px;min-width:56px}
+  .nav-item span{display:none}
+  .sidebar-logo span{display:none}
+  .content{padding:16px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><span>&#9881; Content OS</span></div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">
+        <span class="nav-icon">&#9632;</span><span>Dashboard</span>
+      </div>
+      <div class="nav-item" data-page="pipelines" onclick="navigateTo('pipelines')">
+        <span class="nav-icon">&#9654;</span><span>Pipelines</span>
+      </div>
+      <div class="nav-item" data-page="articles" onclick="navigateTo('articles')">
+        <span class="nav-icon">&#9998;</span><span>Articles</span>
+      </div>
+      <div class="nav-item" data-page="prompts" onclick="navigateTo('prompts')">
+        <span class="nav-icon">&#10070;</span><span>Prompt Studio</span>
+      </div>
+      <div class="nav-item" data-page="settings" onclick="navigateTo('settings')">
+        <span class="nav-icon">&#9881;</span><span>Settings</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">v1.0.0</div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <div class="topbar-status"><span class="status-dot" id="api-dot"></span><span id="api-status">Connected</span></div>
+    </div>
+    <div class="content" id="page-content"></div>
+  </div>
+</div>
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+const API_BASE = 'http://localhost:8000';
+let currentPage = 'dashboard';
+let pollingIntervals = [];
+
+/* ============ UTILS ============ */
+function $(sel, ctx) { return (ctx || document).querySelector(sel); }
+function $$(sel, ctx) { return [...(ctx || document).querySelectorAll(sel)]; }
+
+async function api(path, opts = {}) {
+  try {
+    const res = await fetch(API_BASE + path, {
+      headers: { 'Content-Type': 'application/json', ...opts.headers },
+      ...opts
+    });
+    if (!res.ok) {
+      const err = await res.text().catch(() => res.statusText);
+      throw new Error(`${res.status}: ${err}`);
+    }
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('application/json')) return await res.json();
+    return await res.text();
+  } catch (e) {
+    setApiStatus(false);
+    throw e;
+  }
+}
+
+function setApiStatus(ok) {
+  const dot = $('#api-dot');
+  const txt = $('#api-status');
+  if (dot && txt) {
+    dot.style.background = ok ? 'var(--success)' : 'var(--error)';
+    txt.textContent = ok ? 'Connected' : 'Disconnected';
+  }
+}
+
+function toast(msg, type = 'info') {
+  const c = $('#toast-container');
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+function badge(status) {
+  const s = (status || 'queued').toLowerCase();
+  return `<span class="badge badge-${s}">${s}</span>`;
+}
+
+function formatDate(d) {
+  if (!d) return '-';
+  try { return new Date(d).toLocaleString(); } catch { return d; }
+}
+
+function escapeHtml(s) {
+  if (typeof s !== 'string') return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function jsonPretty(obj) {
+  try { return JSON.stringify(obj, null, 2); } catch { return String(obj); }
+}
+
+function clearPolling() {
+  pollingIntervals.forEach(id => clearInterval(id));
+  pollingIntervals = [];
+}
+
+/* ============ NAVIGATION ============ */
+function navigateTo(page) {
+  clearPolling();
+  currentPage = page;
+  $$('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
+  const titles = { dashboard: 'Dashboard', pipelines: 'Pipelines', articles: 'Articles', prompts: 'Prompt Studio', settings: 'Settings' };
+  $('#page-title').textContent = titles[page] || page;
+  const renderers = { dashboard: renderDashboard, pipelines: renderPipelines, articles: renderArticles, prompts: renderPrompts, settings: renderSettings };
+  if (renderers[page]) renderers[page]();
+}
+
+/* ============ DASHBOARD ============ */
+let tasksData = [];
+let selectedTaskId = null;
+
+async function renderDashboard() {
+  const el = $('#page-content');
+  el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:14px;color:var(--muted)">Tasks</div>
+    <button class="btn btn-primary" onclick="showNewTaskModal()">+ New Task</button>
+  </div>
+  <div id="tasks-list" class="grid grid-2"><div class="empty-state"><div class="spinner"></div><p>Loading tasks...</p></div></div>
+  <div id="task-detail" style="margin-top:20px"></div>`;
+  await loadTasks();
+}
+
+async function loadTasks() {
+  try {
+    tasksData = await api('/api/tasks');
+    setApiStatus(true);
+  } catch (e) {
+    tasksData = [];
+  }
+  renderTaskList();
+  startTaskPolling();
+}
+
+function renderTaskList() {
+  const el = $('#tasks-list');
+  if (!tasksData || tasksData.length === 0) {
+    el.innerHTML = '<div class="empty-state"><p>No tasks found. Create one to get started.</p></div>';
+    return;
+  }
+  el.innerHTML = tasksData.map(t => {
+    const progress = t.progress != null ? t.progress : (t.steps ? Math.round((t.steps.filter(s=>s.status==='success').length / Math.max(t.steps.length,1))*100) : 0);
+    const pClass = t.status === 'success' ? 'complete' : t.status === 'failed' ? 'error' : '';
+    return `<div class="card" style="cursor:pointer;${selectedTaskId===t.id?'border-left:3px solid var(--primary)':''}" onclick="selectTask('${t.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div class="card-title">${escapeHtml(t.title||t.id)}</div>
+        ${badge(t.status)}
+      </div>
+      <div class="progress-wrap"><div class="progress-bar ${pClass}" style="width:${progress}%"></div></div>
+      <div class="card-meta">${formatDate(t.created_at)} &middot; ${progress}% complete</div>
+    </div>`;
+  }).join('');
+}
+
+async function selectTask(id) {
+  selectedTaskId = id;
+  renderTaskList();
+  await loadTaskDetail(id);
+}
+
+async function loadTaskDetail(id) {
+  const el = $('#task-detail');
+  el.innerHTML = '<div class="spinner"></div>';
+  try {
+    const task = await api(`/api/tasks/${id}`);
+    setApiStatus(true);
+    let stepsHtml = '';
+    if (task.steps && task.steps.length > 0) {
+      stepsHtml = '<div class="timeline">' + task.steps.map((s, i) => {
+        const sClass = s.status === 'success' ? 'step-success' : s.status === 'running' ? 'step-running' : s.status === 'failed' ? 'step-failed' : '';
+        const outputs = s.output || s.outputs || s.result;
+        const outputHtml = outputs ? `<div class="step-output" id="step-out-${i}" style="display:none">${escapeHtml(typeof outputs === 'string' ? outputs : jsonPretty(outputs))}</div>` : '';
+        return `<div class="timeline-item ${sClass}">
+          <div class="step-header" onclick="toggleStepOutput(${i})">
+            <span class="step-name">${escapeHtml(s.name||s.step||`Step ${i+1}`)}</span>
+            ${badge(s.status)}
+            <span class="step-duration">${s.duration ? s.duration+'s' : ''}</span>
+            ${outputs ? '<span style="font-size:11px;color:var(--primary);margin-left:auto">&#9660; output</span>' : ''}
+          </div>
+          ${outputHtml}
+        </div>`;
+      }).join('') + '</div>';
+    } else {
+      stepsHtml = '<div class="empty-state" style="padding:16px"><p>No steps yet</p></div>';
+    }
+    el.innerHTML = `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div><span class="card-title" style="font-size:18px">${escapeHtml(task.title||task.id)}</span>
+        <span style="margin-left:8px">${badge(task.status)}</span></div>
+        <div class="card-meta">${formatDate(task.created_at)}</div>
+      </div>
+      ${task.pipeline ? `<div class="card-meta" style="margin-bottom:8px">Pipeline: ${escapeHtml(task.pipeline)}</div>` : ''}
+      ${task.sources && task.sources.length ? `<div class="card-meta" style="margin-bottom:8px">Sources: ${task.sources.map(s=>escapeHtml(s)).join(', ')}</div>` : ''}
+      <div style="font-size:13px;font-weight:600;margin:12px 0 8px">Steps</div>
+      ${stepsHtml}
+    </div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="card" style="color:var(--error)">Failed to load task: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function toggleStepOutput(i) {
+  const el = document.getElementById(`step-out-${i}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function startTaskPolling() {
+  clearPolling();
+  const running = tasksData.filter(t => t.status === 'running' || t.status === 'queued');
+  if (running.length === 0) return;
+  const id = setInterval(async () => {
+    try {
+      tasksData = await api('/api/tasks');
+      setApiStatus(true);
+      renderTaskList();
+      if (selectedTaskId) await loadTaskDetail(selectedTaskId);
+    } catch (e) { /* ignore polling errors */ }
+  }, 3000);
+  pollingIntervals.push(id);
+}
+
+/* New Task Modal */
+async function showNewTaskModal() {
+  let pipelines = [];
+  try { pipelines = await api('/api/pipelines'); } catch {}
+  const pipelineOpts = pipelines.map(p => `<option value="${escapeHtml(p.id||p.name)}">${escapeHtml(p.name||p.id)}</option>`).join('');
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'new-task-modal';
+  overlay.innerHTML = `<div class="modal">
+    <h2>Create New Task</h2>
+    <div class="form-group">
+      <label>Pipeline</label>
+      <select class="form-control" id="nt-pipeline">${pipelineOpts || '<option value="">No pipelines available</option>'}</select>
+    </div>
+    <div class="form-group">
+      <label>Title</label>
+      <input class="form-control" id="nt-title" placeholder="Enter task title">
+    </div>
+    <div class="form-group">
+      <label>Sources (one per line)</label>
+      <textarea class="form-control" id="nt-sources" rows="4" placeholder="https://example.com/article"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="createTask()">Create</button>
+    </div>
+  </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+  document.body.appendChild(overlay);
+}
+
+function closeModal() {
+  const m = $('#new-task-modal') || $('#edit-prompt-modal');
+  if (m) m.remove();
+}
+
+async function createTask() {
+  const pipeline = $('#nt-pipeline').value;
+  const title = $('#nt-title').value;
+  const sourcesRaw = $('#nt-sources').value;
+  const sources = sourcesRaw.split('\n').map(s => s.trim()).filter(Boolean);
+  if (!pipeline) { toast('Please select a pipeline', 'error'); return; }
+  try {
+    await api('/api/tasks', {
+      method: 'POST',
+      body: JSON.stringify({ pipeline, title: title || undefined, sources: sources.length ? sources : undefined })
+    });
+    toast('Task created successfully', 'success');
+    closeModal();
+    await loadTasks();
+  } catch (e) {
+    toast('Failed to create task: ' + e.message, 'error');
+  }
+}
+
+/* ============ PIPELINES ============ */
+let pipelinesData = [];
+let selectedPipelineId = null;
+
+async function renderPipelines() {
+  const el = $('#page-content');
+  el.innerHTML = `<div style="font-size:14px;color:var(--muted);margin-bottom:16px">Pipeline Configurations</div>
+  <div id="pipelines-list" class="grid grid-2"><div class="empty-state"><div class="spinner"></div><p>Loading pipelines...</p></div></div>
+  <div id="pipeline-detail" style="margin-top:20px"></div>`;
+  await loadPipelines();
+}
+
+async function loadPipelines() {
+  try {
+    pipelinesData = await api('/api/pipelines');
+    setApiStatus(true);
+  } catch { pipelinesData = []; }
+  renderPipelineList();
+}
+
+function renderPipelineList() {
+  const el = $('#pipelines-list');
+  if (!pipelinesData || pipelinesData.length === 0) {
+    el.innerHTML = '<div class="empty-state"><p>No pipelines found.</p></div>';
+    return;
+  }
+  el.innerHTML = pipelinesData.map(p => {
+    const stepCount = p.steps ? p.steps.length : 0;
+    return `<div class="card" style="cursor:pointer;${selectedPipelineId===(p.id||p.name)?'border-left:3px solid var(--primary)':''}" onclick="selectPipeline('${escapeHtml(p.id||p.name)}')">
+      <div class="card-title">${escapeHtml(p.name||p.id)}</div>
+      <div class="card-meta">${escapeHtml(p.description||'No description')} &middot; ${stepCount} step${stepCount!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectPipeline(id) {
+  selectedPipelineId = id;
+  renderPipelineList();
+  const p = pipelinesData.find(x => (x.id || x.name) === id);
+  if (!p) return;
+  const el = $('#pipeline-detail');
+  let stepsHtml = '';
+  if (p.steps && p.steps.length > 0) {
+    stepsHtml = p.steps.map((s, i) => {
+      const configStr = s.config ? jsonPretty(s.config) : '';
+      return `<div class="card" style="margin-left:16px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;color:var(--muted);min-width:24px">${i+1}.</span>
+          <span style="font-size:14px;font-weight:500">${escapeHtml(s.name||s.step||`Step ${i+1}`)}</span>
+          <span class="badge badge-${s.type==='llm'?'running':s.type==='transform'?'success':'queued'}">${escapeHtml(s.type||'default')}</span>
+          ${s.enabled===false?'<span class="badge badge-failed">disabled</span>':''}
+        </div>
+        ${configStr ? `<div style="margin-top:8px"><div class="code-block" style="max-height:150px">${escapeHtml(configStr)}</div></div>` : ''}
+      </div>`;
+    }).join('');
+  } else {
+    stepsHtml = '<div class="empty-state" style="padding:16px"><p>No steps defined</p></div>';
+  }
+  el.innerHTML = `<div class="card">
+    <div class="card-title" style="font-size:18px">${escapeHtml(p.name||p.id)}</div>
+    <div class="card-meta" style="margin-bottom:12px">${escapeHtml(p.description||'')}</div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Steps</div>
+    ${stepsHtml}
+  </div>`;
+}
+
+/* ============ ARTICLES ============ */
+let currentArticleId = null;
+
+async function renderArticles() {
+  const el = $('#page-content');
+  el.innerHTML = `<div style="font-size:14px;color:var(--muted);margin-bottom:16px">Article Viewer</div>
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input class="form-control" id="article-id-input" placeholder="Enter article ID" style="max-width:300px">
+      <button class="btn btn-primary" onclick="fetchArticle()">Fetch</button>
+      <button class="btn btn-secondary" onclick="fetchArticleHtml()" id="btn-html" disabled>View HTML</button>
+      <button class="btn btn-success" onclick="validateArticle()" id="btn-validate" disabled>Validate</button>
+    </div>
+  </div>
+  <div id="article-content"></div>`;
+  $('#article-id-input').addEventListener('keydown', e => { if (e.key === 'Enter') fetchArticle(); });
+}
+
+async function fetchArticle() {
+  const id = $('#article-id-input').value.trim();
+  if (!id) { toast('Please enter an article ID', 'error'); return; }
+  currentArticleId = id;
+  const el = $('#article-content');
+  el.innerHTML = '<div class="spinner"></div>';
+  try {
+    const data = await api(`/api/articles/${id}`);
+    setApiStatus(true);
+    el.innerHTML = `<div class="card">
+      <div class="card-title" style="margin-bottom:8px">Article: ${escapeHtml(id)}</div>
+      <div class="code-block">${escapeHtml(jsonPretty(data))}</div>
+    </div>`;
+    $('#btn-html').disabled = false;
+    $('#btn-validate').disabled = false;
+  } catch (e) {
+    el.innerHTML = `<div class="card" style="color:var(--error)">Failed to fetch article: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function fetchArticleHtml() {
+  if (!currentArticleId) return;
+  const el = $('#article-content');
+  const existing = el.innerHTML;
+  let iframeEl = $('#article-html-frame');
+  if (iframeEl) { iframeEl.scrollIntoView(); return; }
+  try {
+    const html = await api(`/api/articles/${currentArticleId}/html`);
+    setApiStatus(true);
+    el.innerHTML = existing + `<div class="card" style="margin-top:12px">
+      <div class="card-title" style="margin-bottom:8px">HTML Preview</div>
+      <iframe id="article-html-frame" class="preview-frame" sandbox="allow-same-origin"></iframe>
+    </div>`;
+    const frame = $('#article-html-frame');
+    const doc = frame.contentDocument || frame.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+  } catch (e) {
+    toast('Failed to fetch HTML: ' + e.message, 'error');
+  }
+}
+
+async function validateArticle() {
+  if (!currentArticleId) return;
+  try {
+    const result = await api(`/api/articles/${currentArticleId}/validate`, { method: 'POST' });
+    setApiStatus(true);
+    toast('Validation complete', result.valid !== false ? 'success' : 'error');
+    const el = $('#article-content');
+    el.innerHTML += `<div class="card" style="margin-top:12px">
+      <div class="card-title" style="margin-bottom:8px">Validation Result</div>
+      <div class="code-block">${escapeHtml(jsonPretty(result))}</div>
+    </div>`;
+  } catch (e) {
+    toast('Validation failed: ' + e.message, 'error');
+  }
+}
+
+/* ============ PROMPT STUDIO ============ */
+let promptsData = [];
+let selectedPromptId = null;
+let currentPromptContent = '';
+
+async function renderPrompts() {
+  const el = $('#page-content');
+  el.innerHTML = `<div style="display:flex;gap:16px;height:calc(100vh - 120px)">
+    <div style="width:260px;min-width:260px;overflow-y:auto">
+      <div style="font-size:14px;color:var(--muted);margin-bottom:12px">Prompts</div>
+      <div id="prompts-list"><div class="empty-state"><div class="spinner"></div></div></div>
+    </div>
+    <div style="flex:1;overflow-y:auto" id="prompt-editor-area">
+      <div class="empty-state"><p>Select a prompt from the list to edit</p></div>
+    </div>
+  </div>`;
+  await loadPrompts();
+}
+
+async function loadPrompts() {
+  try {
+    promptsData = await api('/api/prompts');
+    setApiStatus(true);
+  } catch { promptsData = []; }
+  renderPromptList();
+}
+
+function renderPromptList() {
+  const el = $('#prompts-list');
+  if (!promptsData || promptsData.length === 0) {
+    el.innerHTML = '<div class="empty-state"><p>No prompts found</p></div>';
+    return;
+  }
+  el.innerHTML = promptsData.map(p => {
+    const id = p.id || p.name;
+    return `<div class="card" style="cursor:pointer;padding:10px 12px;${selectedPromptId===id?'border-left:3px solid var(--primary)':''}" onclick="selectPrompt('${escapeHtml(id)}')">
+      <div style="font-size:13px;font-weight:500">${escapeHtml(p.name||p.id)}</div>
+      <div class="card-meta">${escapeHtml(p.description||'')}</div>
+    </div>`;
+  }).join('');
+}
+
+async function selectPrompt(id) {
+  selectedPromptId = id;
+  renderPromptList();
+  const p = promptsData.find(x => (x.id || x.name) === id);
+  if (!p) return;
+  currentPromptContent = p.template || p.content || '';
+  const vars = extractVariables(currentPromptContent);
+  const el = $('#prompt-editor-area');
+  el.innerHTML = `<div class="card" style="margin-bottom:12px">
+    <div class="card-title" style="font-size:16px">${escapeHtml(p.name||p.id)}</div>
+    <div class="card-meta">${escapeHtml(p.description||'')}</div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Template</div>
+    <textarea class="form-control" id="prompt-template" rows="10">${escapeHtml(currentPromptContent)}</textarea>
+  </div>
+  ${vars.length > 0 ? `<div class="card" style="margin-bottom:12px">
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Variables</div>
+    ${vars.map(v => `<div class="form-group">
+      <label>{{${escapeHtml(v)}}}</label>
+      <input class="form-control var-input" data-var="${escapeHtml(v)}" placeholder="Value for ${escapeHtml(v)}">
+    </div>`).join('')}
+  </div>` : ''}
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button class="btn btn-primary" onclick="dryRunPrompt()">Dry Run</button>
+    <button class="btn btn-success" onclick="savePrompt()">Save</button>
+  </div>
+  <div id="dry-run-result"></div>`;
+}
+
+function extractVariables(template) {
+  const matches = template.match(/\{\{(\w+)\}\}/g) || [];
+  return [...new Set(matches.map(m => m.replace(/\{\{|\}\}/g, '')))];
+}
+
+async function dryRunPrompt() {
+  const template = $('#prompt-template').value;
+  const varInputs = $$('.var-input');
+  const variables = {};
+  varInputs.forEach(inp => { variables[inp.dataset.var] = inp.value; });
+  const el = $('#dry-run-result');
+  el.innerHTML = '<div class="spinner"></div>';
+  try {
+    const result = await api(`/api/prompts/${selectedPromptId}/dry-run`, {
+      method: 'POST',
+      body: JSON.stringify({ template, variables })
+    });
+    setApiStatus(true);
+    el.innerHTML = `<div class="card">
+      <div class="card-title" style="margin-bottom:8px">Dry Run Result</div>
+      <div class="code-block">${escapeHtml(typeof result === 'string' ? result : jsonPretty(result))}</div>
+    </div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="card" style="color:var(--error)">Dry run failed: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function savePrompt() {
+  const template = $('#prompt-template').value;
+  try {
+    await api(`/api/prompts/${selectedPromptId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ template })
+    });
+    setApiStatus(true);
+    toast('Prompt saved successfully', 'success');
+    currentPromptContent = template;
+    const p = promptsData.find(x => (x.id || x.name) === selectedPromptId);
+    if (p) { p.template = template; p.content = template; }
+  } catch (e) {
+    toast('Failed to save prompt: ' + e.message, 'error');
+  }
+}
+
+/* ============ SETTINGS ============ */
+async function renderSettings() {
+  const el = $('#page-content');
+  el.innerHTML = `<div style="font-size:14px;color:var(--muted);margin-bottom:16px">Configuration</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:12px">LLM Configs</div>
+      <div id="llm-configs"><div class="spinner"></div></div>
+    </div>
+    <div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:12px">Templates</div>
+      <div id="templates-list"><div class="spinner"></div></div>
+    </div>
+  </div>`;
+  await Promise.all([loadLlmConfigs(), loadTemplates()]);
+}
+
+async function loadLlmConfigs() {
+  const el = $('#llm-configs');
+  try {
+    const configs = await api('/api/llm-configs');
+    setApiStatus(true);
+    if (!configs || configs.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>No LLM configs found</p></div>';
+      return;
+    }
+    el.innerHTML = configs.map(c => `<div class="card">
+      <div class="card-title">${escapeHtml(c.name||c.id)}</div>
+      <div class="card-meta">Provider: ${escapeHtml(c.provider||'-')} &middot; Model: ${escapeHtml(c.model||'-')}</div>
+      ${c.api_base ? `<div class="card-meta">Base: ${escapeHtml(c.api_base)}</div>` : ''}
+      ${c.temperature != null ? `<div class="card-meta">Temperature: ${c.temperature}</div>` : ''}
+    </div>`).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="card" style="color:var(--error)">Failed to load: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadTemplates() {
+  const el = $('#templates-list');
+  try {
+    const templates = await api('/api/templates');
+    setApiStatus(true);
+    if (!templates || templates.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>No templates found</p></div>';
+      return;
+    }
+    el.innerHTML = templates.map(t => `<div class="card">
+      <div class="card-title">${escapeHtml(t.name||t.id)}</div>
+      <div class="card-meta">${escapeHtml(t.description||t.type||'')}</div>
+    </div>`).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="card" style="color:var(--error)">Failed to load: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+/* ============ INIT ============ */
+document.addEventListener('DOMContentLoaded', () => {
+  navigateTo('dashboard');
+  // Periodic API health check
+  setInterval(async () => {
+    try {
+      await fetch(API_BASE + '/api/tasks', { method: 'HEAD' }).catch(() => fetch(API_BASE + '/'));
+      setApiStatus(true);
+    } catch {
+      setApiStatus(false);
+    }
+  }, 10000);
+});
+</script>
+</body>
+</html>

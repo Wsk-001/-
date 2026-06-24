@@ -6,6 +6,8 @@ from typing import Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import init_db
@@ -44,6 +46,21 @@ async def startup_event():
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "content-os-api"}
+
+
+# Serve the standalone HTML dashboard (no Node.js needed)
+_WEB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web", "dist")
+
+@app.get("/")
+async def serve_dashboard():
+    html_path = os.path.join(_WEB_DIR, "index.html")
+    if os.path.exists(html_path):
+        return FileResponse(html_path, media_type="text/html")
+    return {"message": "Content OS API is running. Dashboard not found at " + html_path}
+
+
+if os.path.isdir(_WEB_DIR):
+    app.mount("/static", StaticFiles(directory=_WEB_DIR), name="static")
 
 
 @app.websocket("/api/ws/tasks/{task_id}")

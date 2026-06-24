@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -19,8 +19,8 @@ class LLMProvider(ABC):
     @abstractmethod
     async def chat(
         self,
-        messages: list[dict[str, Any]],
-        response_format: Optional[dict[str, Any]] = None,
+        messages: List[Dict[str, Any]],
+        response_format: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> str:
         """Send a chat completion request and return the raw response text.
@@ -50,8 +50,8 @@ class OpenAIProvider(LLMProvider):
 
     async def chat(
         self,
-        messages: list[dict[str, Any]],
-        response_format: Optional[dict[str, Any]] = None,
+        messages: List[Dict[str, Any]],
+        response_format: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> str:
         url = f"{self._base_url}/chat/completions"
@@ -59,7 +59,7 @@ class OpenAIProvider(LLMProvider):
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
         }
-        payload: dict[str, Any] = {
+        payload: Dict[str, Any] = {
             "model": kwargs.pop("model", self._model),
             "messages": messages,
         }
@@ -107,8 +107,8 @@ class ClaudeProvider(LLMProvider):
 
     async def chat(
         self,
-        messages: list[dict[str, Any]],
-        response_format: Optional[dict[str, Any]] = None,
+        messages: List[Dict[str, Any]],
+        response_format: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> str:
         url = "https://api.anthropic.com/v1/messages"
@@ -119,15 +119,15 @@ class ClaudeProvider(LLMProvider):
         }
 
         # Separate system messages from user/assistant messages.
-        system_parts: list[str] = []
-        api_messages: list[dict[str, Any]] = []
+        system_parts: List[str] = []
+        api_messages: List[Dict[str, Any]] = []
         for msg in messages:
             if msg.get("role") == "system":
                 system_parts.append(str(msg.get("content", "")))
             else:
                 api_messages.append(msg)
 
-        payload: dict[str, Any] = {
+        payload: Dict[str, Any] = {
             "model": kwargs.pop("model", self._model),
             "messages": api_messages,
             "max_tokens": kwargs.pop("max_tokens", 4096),
@@ -138,7 +138,7 @@ class ClaudeProvider(LLMProvider):
             payload["system"] = "\n\n".join(system_parts)
 
         # If structured output is requested, use tool_use.
-        tools: Optional[list[dict[str, Any]]] = None
+        tools: Optional[List[Dict[str, Any]]] = None
         if response_format is not None:
             schema = response_format.get("json_schema", {}).get("schema", response_format)
             tools = [
@@ -196,8 +196,8 @@ class DeepSeekProvider(LLMProvider):
 
     async def chat(
         self,
-        messages: list[dict[str, Any]],
-        response_format: Optional[dict[str, Any]] = None,
+        messages: List[Dict[str, Any]],
+        response_format: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> str:
         url = f"{self._base_url}/chat/completions"
@@ -205,7 +205,7 @@ class DeepSeekProvider(LLMProvider):
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
         }
-        payload: dict[str, Any] = {
+        payload: Dict[str, Any] = {
             "model": kwargs.pop("model", self._model),
             "messages": messages,
         }
@@ -239,7 +239,7 @@ class LLMOrchestrator:
     """
 
     def __init__(self) -> None:
-        self._providers: dict[str, type[LLMProvider]] = {
+        self._providers: Dict[str, type[LLMProvider]] = {
             "openai": OpenAIProvider,
             "claude": ClaudeProvider,
             "deepseek": DeepSeekProvider,
@@ -268,14 +268,13 @@ class LLMOrchestrator:
     async def generate_structured(
         self,
         prompt_content: str,
-        variables: dict[str, Any],
-        output_schema: dict[str, Any],
+        variables: Dict[str, Any],
+        output_schema: Dict[str, Any],
         provider_name: str,
         api_key: str,
         model: Optional[str] = None,
         **kwargs: Any,
-    ) -> dict[str, Any]:
-        """Generate structured output from an LLM.
+    ) -> Dict[str, Any]:
 
         Steps:
             1. Render the prompt template with variables using PromptEngine.
@@ -290,7 +289,7 @@ class LLMOrchestrator:
         # Separate constructor kwargs from chat kwargs.
         # Constructor: model, base_url, timeout
         # Chat: temperature, max_tokens (and any other provider-specific opts)
-        constructor_kwargs: dict[str, Any] = {}
+        constructor_kwargs: Dict[str, Any] = {}
         if model is not None:
             constructor_kwargs["model"] = model
         if "base_url" in kwargs:
@@ -299,7 +298,7 @@ class LLMOrchestrator:
             constructor_kwargs["timeout"] = kwargs["timeout"]
 
         # Everything else goes to chat().
-        chat_kwargs: dict[str, Any] = {
+        chat_kwargs: Dict[str, Any] = {
             k: v for k, v in kwargs.items()
             if k not in ("base_url", "timeout")
         }
@@ -334,8 +333,8 @@ class LLMOrchestrator:
     @staticmethod
     def _build_response_format(
         provider_name: str,
-        output_schema: dict[str, Any],
-    ) -> dict[str, Any]:
+        output_schema: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Build the provider-specific response_format payload."""
         if provider_name == "openai":
             return {
@@ -352,7 +351,7 @@ class LLMOrchestrator:
         return {"json_schema": {"schema": output_schema}}
 
     @staticmethod
-    def _parse_json_response(raw: str) -> dict[str, Any]:
+    def _parse_json_response(raw: str) -> Dict[str, Any]:
         """Parse a raw LLM response string into a dict.
 
         Handles common wrapping patterns like ```json ... ``` blocks.
@@ -377,7 +376,7 @@ class LLMOrchestrator:
         return parsed
 
     @staticmethod
-    def _validate_against_schema(data: dict[str, Any], schema: dict[str, Any]) -> None:
+    def _validate_against_schema(data: Dict[str, Any], schema: Dict[str, Any]) -> None:
         """Lightweight validation: check that all ``required`` fields are present."""
         required = schema.get("required", [])
         missing = [field for field in required if field not in data]

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 # ---------------------------------------------------------------------------
 # Patch TEMPLATES_DIR so article_lib reads from the content-os templates dir.
@@ -60,7 +60,7 @@ def _safe_fragment(value: str) -> str:
     return cleaned or "image"
 
 
-def _cover_prompt(article: dict[str, Any], meta: Optional[dict[str, Any]] = None) -> str:
+def _cover_prompt(article: Dict[str, Any], meta: Optional[Dict[str, Any]] = None) -> str:
     meta = meta if meta is not None else ensure_meta_defaults(article)
     title = meta.get("title") or "微信公众号封面"
     date_short = meta.get("date_short")
@@ -81,7 +81,7 @@ def _cover_prompt(article: dict[str, Any], meta: Optional[dict[str, Any]] = None
     )
 
 
-def _content_prompt(article: dict[str, Any], title: str, detail: str) -> str:
+def _content_prompt(article: Dict[str, Any], title: str, detail: str) -> str:
     template = article.get("template")
     if template == "daily-intelligence":
         return (
@@ -99,8 +99,8 @@ def _content_prompt(article: dict[str, Any], title: str, detail: str) -> str:
     )
 
 
-def _section_detail(section: dict[str, Any], block: dict[str, Any]) -> str:
-    text_bits: list[str] = []
+def _section_detail(section: Dict[str, Any], block: Dict[str, Any]) -> str:
+    text_bits: List[str] = []
     if section.get("cn"):
         text_bits.append(str(section["cn"]))
     if block.get("body"):
@@ -113,7 +113,7 @@ def _section_detail(section: dict[str, Any], block: dict[str, Any]) -> str:
     return ". ".join(part for part in text_bits if part)
 
 
-def _choose_section_subject(section: dict[str, Any]) -> Optional[dict[str, Any]]:
+def _choose_section_subject(section: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     for block in section.get("blocks") or []:
         if block.get("type", "card") in {"card", "opinion", "week-ahead"}:
             return block
@@ -121,11 +121,11 @@ def _choose_section_subject(section: dict[str, Any]) -> Optional[dict[str, Any]]
 
 
 def attach_missing_image_plans(
-    article: dict[str, Any],
+    article: Dict[str, Any],
     *,
     output_dir: str | Path,
     max_content_images: int = 3,
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """Attach image plans (prompts + local paths) to an article.
 
     Adds a cover image plan and up to ``max_content_images`` content image plans
@@ -145,7 +145,7 @@ def attach_missing_image_plans(
         cover["local_path"] = str(output_path / f"cover-{date_short}.png")
     meta["cover_image"] = cover
 
-    plans: list[dict[str, Any]] = []
+    plans: List[Dict[str, Any]] = []
     plans.append({"target": "cover", **cover})
 
     headline = article.get("headline") or {}

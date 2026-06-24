@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from adapters.article_lib_proxy import validate_article
+from typing import Any, Dict, List
 from core.compat import to_thread
 from core.pipeline_engine import StepContext, StepResult
 from core.step_registry import StepRegistry
@@ -37,13 +37,13 @@ class ValidateContentStep(StepExecutor):
             validate_article, article, **({"html_text": html_text} if html_text else {})
         )
 
-        result_dict: dict[str, Any] = {
+        result_dict: Dict[str, Any] = {
             "ok": validation.ok,
             "errors": list(validation.errors),
             "warnings": list(validation.warnings),
         }
 
-        logs: list[str] = []
+        logs: List[str] = []
         if validation.errors:
             for err in validation.errors:
                 logs.append(f"ERROR: {err}")

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, List
 
 from core.pipeline_engine import StepContext, StepResult
 
@@ -16,8 +16,8 @@ class StepExecutor(ABC):
     step_type: str = ""
     name: str = ""
     description: str = ""
-    required_inputs: list[str] = []
-    produced_outputs: list[str] = []
+    required_inputs: List[str] = []
+    produced_outputs: List[str] = []
 
     @abstractmethod
     async def execute(self, ctx: StepContext) -> StepResult:

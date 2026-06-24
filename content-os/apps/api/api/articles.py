@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from typing import List, Optional
 from core.database import get_db
 from models.article import Article
 from schemas.article import ArticleCreate, ArticleResponse, ArticleValidateResponse
@@ -87,8 +88,8 @@ async def validate_article(article_id: uuid.UUID, db: AsyncSession = Depends(get
     if article is None:
         raise HTTPException(status_code=404, detail="Article not found")
 
-    errors: list[str] = []
-    warnings: list[str] = []
+    errors: List[str] = []
+    warnings: List[str] = []
 
     article_json = article.article_json
 

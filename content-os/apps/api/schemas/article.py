@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -29,5 +29,5 @@ class ArticleResponse(BaseModel):
 
 class ArticleValidateResponse(BaseModel):
     valid: bool
-    errors: list[str] = []
-    warnings: list[str] = []
+    errors: List[str] = []
+    warnings: List[str] = []

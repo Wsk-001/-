@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, AsyncGenerator, Optional
+from typing import Any, AsyncGenerator, Dict, Optional
 
 try:
     import redis.asyncio as _redis
@@ -29,7 +29,7 @@ class EventBus:
             self._redis = None  # type: ignore[assignment]
             self._pubsub = None
 
-    async def emit(self, event: str, task_id: str, data: Optional[dict[str, Any]] = None) -> None:
+    async def emit(self, event: str, task_id: str, data: Optional[Dict[str, Any]] = None) -> None:
         """Publish event to Redis channel ``task:{task_id}``."""
         if not _REDIS_AVAILABLE or self._redis is None:
             return
@@ -52,7 +52,7 @@ class EventBus:
             return
         await self._pubsub.unsubscribe(f"task:{task_id}")
 
-    async def listen(self, task_id: str) -> AsyncGenerator[dict[str, Any], None]:
+    async def listen(self, task_id: str) -> AsyncGenerator[Dict[str, Any], None]:
         """Async generator yielding events for a task.
 
         Usage::

@@ -4,7 +4,7 @@ import time
 import traceback
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import select
@@ -24,19 +24,19 @@ class StepContext:
     """Context passed to each step executor."""
 
     task_id: UUID
-    inputs: dict[str, Any] = field(default_factory=dict)
-    config: dict[str, Any] = field(default_factory=dict)
-    artifacts: dict[str, Any] = field(default_factory=dict)
+    inputs: Dict[str, Any] = field(default_factory=dict)
+    config: Dict[str, Any] = field(default_factory=dict)
+    artifacts: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class StepResult:
     """Result from a step executor."""
 
-    outputs: dict[str, Any] = field(default_factory=dict)
-    artifacts: dict[str, Any] = field(default_factory=dict)
-    metrics: dict[str, Any] = field(default_factory=dict)
-    logs: list[str] = field(default_factory=list)
+    outputs: Dict[str, Any] = field(default_factory=dict)
+    artifacts: Dict[str, Any] = field(default_factory=dict)
+    metrics: Dict[str, Any] = field(default_factory=dict)
+    logs: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -127,7 +127,7 @@ class PipelineEngine:
             ordered_steps = self._build_dag(steps)
 
             # Shared artifact store accumulated across steps.
-            artifacts: dict[str, Any] = {}
+            artifacts: Dict[str, Any] = {}
 
             # If resuming, load artifacts from already-completed steps.
             start_index = 0
@@ -189,7 +189,7 @@ class PipelineEngine:
             raise ValueError(f"Step '{step_key}' not found in task {task_id}")
 
         # Reconstruct artifacts from prior completed steps.
-        artifacts: dict[str, Any] = {}
+        artifacts: Dict[str, Any] = {}
         for step in ordered_steps:
             if self._step_key(step) == step_key:
                 break
@@ -209,7 +209,7 @@ class PipelineEngine:
     # DAG construction
     # ------------------------------------------------------------------
 
-    def _build_dag(self, steps: list[_StepRuntime]) -> list[_StepRuntime]:
+    def _build_dag(self, steps: List[_StepRuntime]) -> List[_StepRuntime]:
         """Build execution order from depends_on.
 
         Performs a topological sort using depth-first traversal, falling
@@ -219,7 +219,7 @@ class PipelineEngine:
         step_map = {self._step_key(s): s for s in steps}
         visited: set[str] = set()
         in_progress: set[str] = set()
-        order: list[_StepRuntime] = []
+        order: List[_StepRuntime] = []
 
         def visit(step_key: str) -> None:
             if step_key in visited:
@@ -243,7 +243,7 @@ class PipelineEngine:
         return order
 
     @staticmethod
-    def _find_resume_index(steps: list[_StepRuntime], resume_from_step: str) -> int:
+    def _find_resume_index(steps: List[_StepRuntime], resume_from_step: str) -> int:
         """Return the index of the step to resume from."""
         for index, step in enumerate(steps):
             if PipelineEngine._step_key(step) == resume_from_step:
@@ -258,9 +258,8 @@ class PipelineEngine:
         self,
         task_id: UUID,
         step: _StepRuntime,
-        artifacts: dict[str, Any],
+        artifacts: Dict[str, Any],
     ) -> None:
-        """Execute a single step, retrying on failure up to max_retries."""
         max_retries = self._step_max_retries(step)
         attempt = self._step_attempt(step)
 
@@ -291,7 +290,7 @@ class PipelineEngine:
         self,
         task_id: UUID,
         step: _StepRuntime,
-        artifacts: dict[str, Any],
+        artifacts: Dict[str, Any],
         attempt: int,
     ) -> None:
         """Execute a single step attempt."""
@@ -370,7 +369,7 @@ class PipelineEngine:
     # Step config builder
     # ------------------------------------------------------------------
 
-    def _build_step_config(self, step: _StepRuntime) -> dict[str, Any]:
+    def _build_step_config(self, step: _StepRuntime) -> Dict[str, Any]:
         """Build step config, merging prompt_id and llm_config_id from PipelineStep.
 
         The TaskStep's ``config_snapshot`` is the base config (copied from the
@@ -378,7 +377,7 @@ class PipelineEngine:
         ``prompt_id`` and ``llm_config_id`` from the live PipelineStep so that
         steps like ``generate_article`` can resolve them from the DB.
         """
-        config: dict[str, Any] = dict(self._step_config(step))
+        config: Dict[str, Any] = dict(self._step_config(step))
         ps = step.pipeline_step
         if ps is not None:
             if ps.prompt_id is not None:
@@ -399,7 +398,7 @@ class PipelineEngine:
         )
         return result.scalar_one_or_none()
 
-    async def _load_steps(self, task: Any) -> list[_StepRuntime]:
+    async def _load_steps(self, task: Any) -> List[_StepRuntime]:
         """Load TaskSteps and merge with PipelineSteps by step_key."""
         from models.task import TaskStep
         from models.pipeline import PipelineStep
@@ -418,7 +417,7 @@ class PipelineEngine:
 
         # Match by step_key.
         ps_map = {ps.step_key: ps for ps in pipeline_steps}
-        merged: list[_StepRuntime] = []
+        merged: List[_StepRuntime] = []
         for ts in task_steps:
             ps = ps_map.get(ts.step_key)
             merged.append(_StepRuntime(task_step=ts, pipeline_step=ps))
@@ -430,8 +429,8 @@ class PipelineEngine:
 
     def _restore_artifacts(
         self,
-        completed_steps: list[_StepRuntime],
-        artifacts: dict[str, Any],
+        completed_steps: List[_StepRuntime],
+        artifacts: Dict[str, Any],
     ) -> None:
         """Load artifacts from already-completed steps into the shared store."""
         for step in completed_steps:
@@ -439,7 +438,7 @@ class PipelineEngine:
                 self._merge_step_artifacts(step, artifacts)
 
     @staticmethod
-    def _merge_step_artifacts(step: _StepRuntime, artifacts: dict[str, Any]) -> None:
+    def _merge_step_artifacts(step: _StepRuntime, artifacts: Dict[str, Any]) -> None:
         """Merge a step's stored artifacts into the shared store."""
         outputs = getattr(step.task_step, "outputs", None)
         if outputs and isinstance(outputs, dict):
@@ -451,7 +450,7 @@ class PipelineEngine:
     # Event helpers
     # ------------------------------------------------------------------
 
-    async def _emit(self, event: str, task_id: UUID, data: Optional[dict[str, Any]] = None) -> None:
+    async def _emit(self, event: str, task_id: UUID, data: Optional[Dict[str, Any]] = None) -> None:
         await self.event_bus.emit(event, str(task_id), data)
 
     # ------------------------------------------------------------------
@@ -471,7 +470,7 @@ class PipelineEngine:
         return step.task_step.status
 
     @staticmethod
-    def _step_config(step: _StepRuntime) -> dict[str, Any]:
+    def _step_config(step: _StepRuntime) -> Dict[str, Any]:
         config = step.task_step.config_snapshot
         if config is None:
             return {}
@@ -492,7 +491,7 @@ class PipelineEngine:
         return 0
 
     @staticmethod
-    def _step_depends_on(step: _StepRuntime) -> list[str]:
+    def _step_depends_on(step: _StepRuntime) -> List[str]:
         if step.pipeline_step is not None:
             deps = step.pipeline_step.depends_on
             if isinstance(deps, list):

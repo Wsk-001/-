@@ -4,7 +4,7 @@ from core.compat import to_thread
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.request import Request, urlopen
 import re
 
@@ -27,9 +27,9 @@ class TextExtractor(HTMLParser):
         super().__init__()
         self.title = ""
         self._in_title = False
-        self.chunks: list[str] = []
+        self.chunks: List[str] = []
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
+    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
         if tag.lower() == "title":
             self._in_title = True
 
@@ -46,7 +46,7 @@ class TextExtractor(HTMLParser):
         self.chunks.append(text)
 
 
-def fetch_url(url: str, timeout: int, max_chars: int) -> dict[str, Any]:
+def fetch_url(url: str, timeout: int, max_chars: int) -> Dict[str, Any]:
     """Fetch a URL and extract title + visible text."""
     request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with urlopen(request, timeout=timeout) as response:
@@ -63,19 +63,19 @@ def fetch_url(url: str, timeout: int, max_chars: int) -> dict[str, Any]:
     return {"title": title, "content": text[:max_chars], "content_type": content_type}
 
 
-def read_file(path: str | Path, max_chars: int) -> dict[str, Any]:
+def read_file(path: str | Path, max_chars: int) -> Dict[str, Any]:
     """Read a local file and return its content."""
     text = Path(path).read_text(encoding="utf-8")
     return {"title": Path(path).name, "content": text[:max_chars], "content_type": "text/plain"}
 
 
-def collect(spec: dict[str, Any], timeout: int, max_chars: int) -> dict[str, Any]:
+def collect(spec: Dict[str, Any], timeout: int, max_chars: int) -> Dict[str, Any]:
     """Collect sources from a spec dict.
 
     The ``spec`` must contain a ``sources`` list where each entry has a
     ``type`` of ``file``, ``text``, or ``url``.
     """
-    items: list[dict[str, Any]] = []
+    items: List[Dict[str, Any]] = []
     for entry in spec.get("sources") or []:
         entry_type = entry.get("type")
         label = (
@@ -140,7 +140,7 @@ class CollectSourcesStep(StepExecutor):
     step_type = "collect_sources"
     name = "Collect Sources"
     description = "Collect local files, URLs, or raw text into a normalized source bundle."
-    required_inputs: list[str] = []
+    required_inputs: List[str] = []
     produced_outputs = ["source_bundle"]
 
     async def execute(self, ctx: StepContext) -> StepResult:

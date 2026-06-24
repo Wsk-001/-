@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -30,7 +31,7 @@ async def _get_default_owner_id(db: AsyncSession) -> uuid.UUID:
     return uuid.UUID("00000000-0000-0000-0000-000000000000")
 
 
-@router.get("", response_model=list[PipelineResponse])
+@router.get("", response_model=List[PipelineResponse])
 async def list_pipelines(
     limit: int = 50,
     offset: int = 0,

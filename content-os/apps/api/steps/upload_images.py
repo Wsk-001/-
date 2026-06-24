@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, List
 
 from core.pipeline_engine import StepContext, StepResult
 from core.step_registry import StepRegistry
@@ -27,7 +27,7 @@ class UploadImagesStep(StepExecutor):
         if article is None:
             raise ValueError("article_with_images artifact is required")
 
-        plans: list[dict[str, Any]] = []
+        plans: List[Dict[str, Any]] = []
         if isinstance(article, dict):
             plans = (article.get("_plans") or {}).get("images", [])
 

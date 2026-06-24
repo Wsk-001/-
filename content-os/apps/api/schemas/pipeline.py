@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -15,7 +15,7 @@ class PipelineStepCreate(BaseModel):
     config: dict = {}
     prompt_id: Optional[uuid.UUID] = None
     llm_config_id: Optional[uuid.UUID] = None
-    depends_on: list[str] = []
+    depends_on: List[str] = []
     enabled: bool = True
     retry_policy: dict = {}
 
@@ -28,7 +28,7 @@ class PipelineStepUpdate(BaseModel):
     config: Optional[dict] = None
     prompt_id: Optional[uuid.UUID] = None
     llm_config_id: Optional[uuid.UUID] = None
-    depends_on: Optional[list[str]] = None
+    depends_on: Optional[List[str]] = None
     enabled: Optional[bool] = None
     retry_policy: Optional[dict] = None
 
@@ -55,7 +55,7 @@ class PipelineCreate(BaseModel):
     description: Optional[str] = None
     template_key: str = "daily-intelligence"
     is_default: bool = False
-    steps: list[PipelineStepCreate] = []
+    steps: List[PipelineStepCreate] = []
 
 
 class PipelineUpdate(BaseModel):
@@ -75,6 +75,6 @@ class PipelineResponse(BaseModel):
     template_key: str
     is_default: bool
     version: int
-    steps: list[PipelineStepResponse] = []
+    steps: List[PipelineStepResponse] = []
     created_at: datetime
     updated_at: datetime

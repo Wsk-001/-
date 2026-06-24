@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from typing import List
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -103,7 +104,7 @@ async def seed() -> None:
         db.add(user)
         await db.flush()
 
-        llm_configs: list[LLMConfig] = []
+        llm_configs: List[LLMConfig] = []
         for config_data in DEFAULT_LLM_CONFIGS:
             config = LLMConfig(**config_data)
             db.add(config)

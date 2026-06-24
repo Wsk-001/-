@@ -7,7 +7,7 @@ import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 
@@ -28,8 +28,8 @@ class ArticleError(RuntimeError):
 
 @dataclass
 class ValidationResult:
-    errors: list[str]
-    warnings: list[str]
+    errors: List[str]
+    warnings: List[str]
 
     @property
     def ok(self) -> bool:
@@ -40,7 +40,7 @@ def available_templates() -> set[str]:
     return {path.stem for path in TEMPLATES_DIR.glob("*.html")}
 
 
-def load_json(path: str | Path) -> dict[str, Any]:
+def load_json(path: str | Path) -> Dict[str, Any]:
     with Path(path).open("r", encoding="utf-8") as handle:
         data = json.load(handle)
     if not isinstance(data, dict):
@@ -61,7 +61,7 @@ def normalize_text(value: Any, *, allow_html: bool = False) -> str:
     return text
 
 
-def normalize_paragraphs(value: Any) -> list[str]:
+def normalize_paragraphs(value: Any) -> List[str]:
     if value is None:
         return []
     if isinstance(value, str):
@@ -85,7 +85,7 @@ def parse_iso_date(raw: Optional[str]) -> date:
     return date.today()
 
 
-def ensure_meta_defaults(article: dict[str, Any]) -> dict[str, Any]:
+def ensure_meta_defaults(article: Dict[str, Any]) -> Dict[str, Any]:
     raw_meta = article.get("meta")
     meta = raw_meta if isinstance(raw_meta, dict) else dict(raw_meta or {})
     article["meta"] = meta
@@ -104,7 +104,7 @@ def ensure_meta_defaults(article: dict[str, Any]) -> dict[str, Any]:
     return meta
 
 
-def count_sources(article: dict[str, Any]) -> int:
+def count_sources(article: Dict[str, Any]) -> int:
     sources: set[str] = set()
     headline = article.get("headline") or {}
     source = headline.get("source")
@@ -118,7 +118,7 @@ def count_sources(article: dict[str, Any]) -> int:
     return len(sources)
 
 
-def count_news_items(article: dict[str, Any]) -> int:
+def count_news_items(article: Dict[str, Any]) -> int:
     count = 0
     for section in article.get("sections") or []:
         for block in section.get("blocks") or []:
@@ -142,7 +142,7 @@ def is_brutal_template(template_name: str) -> bool:
     return template_name == "neo-brutalism"
 
 
-def render_image_block(image: Optional[dict[str, Any]], *, template_name: str = "") -> str:
+def render_image_block(image: Optional[Dict[str, Any]], *, template_name: str = "") -> str:
     if not image:
         return ""
     url = normalize_text(image.get("url"))
@@ -176,7 +176,7 @@ def render_image_block(image: Optional[dict[str, Any]], *, template_name: str = 
     )
 
 
-def render_section_heading(section: dict[str, Any], *, template_name: str = "") -> str:
+def render_section_heading(section: Dict[str, Any], *, template_name: str = "") -> str:
     section_en = normalize_text(section.get("en") or section.get("title_en") or "SECTION")
     section_cn = normalize_text(section.get("cn") or section.get("title") or "分区")
     if is_studio_brief_template(template_name):
@@ -218,7 +218,7 @@ def render_body_paragraphs(value: Any, *, margin_bottom: str = "8px", template_n
     )
 
 
-def render_card_block(block: dict[str, Any], *, highlight: bool, template_name: str = "") -> str:
+def render_card_block(block: Dict[str, Any], *, highlight: bool, template_name: str = "") -> str:
     number = html.escape(str(block.get("number") or "").zfill(2) if str(block.get("number") or "").isdigit() else str(block.get("number") or ""))
     number = number or "&nbsp;"
     color = "#e94560" if highlight else "#1a1a2e"
@@ -271,14 +271,14 @@ def render_card_block(block: dict[str, Any], *, highlight: bool, template_name: 
     )
 
 
-def render_opinion_block(block: dict[str, Any], *, template_name: str = "") -> str:
+def render_opinion_block(block: Dict[str, Any], *, template_name: str = "") -> str:
     opinion = dict(block)
     opinion["title"] = f"编辑观点：{block.get('title', '')}"
     opinion.setdefault("source", block.get("source") or "39Claw 编辑部")
     return render_card_block(opinion, highlight=True, template_name=template_name)
 
 
-def render_week_ahead_block(block: dict[str, Any], *, template_name: str = "") -> str:
+def render_week_ahead_block(block: Dict[str, Any], *, template_name: str = "") -> str:
     number = normalize_text(block.get("number") or "")
     title = normalize_text(block.get("title") or "下周前瞻")
     source = normalize_text(block.get("source") or "")
@@ -325,7 +325,7 @@ def render_week_ahead_block(block: dict[str, Any], *, template_name: str = "") -
     )
 
 
-def render_quote_block(block: dict[str, Any], *, template_name: str = "") -> str:
+def render_quote_block(block: Dict[str, Any], *, template_name: str = "") -> str:
     text = normalize_text(block.get("text") or "", allow_html=True)
     attribution = normalize_text(block.get("attribution") or "")
     if is_brutal_template(template_name):
@@ -345,7 +345,7 @@ def render_quote_block(block: dict[str, Any], *, template_name: str = "") -> str
     )
 
 
-def render_takeaways_block(block: dict[str, Any], *, template_name: str = "") -> str:
+def render_takeaways_block(block: Dict[str, Any], *, template_name: str = "") -> str:
     title = normalize_text(block.get("title") or "核心结论")
     items = block.get("items") or []
     items_html = "".join(
@@ -368,7 +368,7 @@ def render_takeaways_block(block: dict[str, Any], *, template_name: str = "") ->
     )
 
 
-def render_paragraph_block(block: dict[str, Any], *, template_name: str = "") -> str:
+def render_paragraph_block(block: Dict[str, Any], *, template_name: str = "") -> str:
     body = render_body_paragraphs(block.get("text") or block.get("body"), margin_bottom="12px", template_name=template_name)
     if is_brutal_template(template_name):
         return f'<section style="background: #fffdf7; padding: 0 18px 8px;">{body}</section>'
@@ -377,7 +377,7 @@ def render_paragraph_block(block: dict[str, Any], *, template_name: str = "") ->
     return f'<section style="background: #ffffff; padding: 0 20px 8px;">{body}</section>'
 
 
-def render_block(block: dict[str, Any], *, template_name: str = "") -> str:
+def render_block(block: Dict[str, Any], *, template_name: str = "") -> str:
     block_type = block.get("type", "card")
     if block_type == "card":
         return render_card_block(block, highlight=block.get("style") == "highlight", template_name=template_name)
@@ -396,8 +396,8 @@ def render_block(block: dict[str, Any], *, template_name: str = "") -> str:
     raise ArticleError(f"Unsupported block type: {block_type}")
 
 
-def render_sections(article: dict[str, Any], *, template_name: str = "") -> str:
-    rendered: list[str] = []
+def render_sections(article: Dict[str, Any], *, template_name: str = "") -> str:
+    rendered: List[str] = []
     for section in article.get("sections") or []:
         rendered.append(render_section_heading(section, template_name=template_name))
         intro = section.get("intro")
@@ -427,7 +427,7 @@ def render_sections(article: dict[str, Any], *, template_name: str = "") -> str:
     return "".join(rendered)
 
 
-def render_headline_body(article: dict[str, Any], *, template_name: str = "") -> str:
+def render_headline_body(article: Dict[str, Any], *, template_name: str = "") -> str:
     paragraphs = normalize_paragraphs((article.get("headline") or {}).get("body"))
     if not paragraphs:
         return ""
@@ -447,7 +447,7 @@ def render_headline_body(article: dict[str, Any], *, template_name: str = "") ->
     )
 
 
-def apply_replacements(template_text: str, replacements: dict[str, str]) -> str:
+def apply_replacements(template_text: str, replacements: Dict[str, str]) -> str:
     rendered = template_text
     for key, value in replacements.items():
         rendered = rendered.replace(f"{{{{{key}}}}}", value)
@@ -458,7 +458,7 @@ def strip_html_comments(html_text: str) -> str:
     return re.sub(r"<!--.*?-->", "", html_text, flags=re.S)
 
 
-def render_article(article: dict[str, Any]) -> str:
+def render_article(article: Dict[str, Any]) -> str:
     meta = ensure_meta_defaults(article)
     template_name = str(article.get("template") or "").strip()
     template_text = strip_html_comments(read_template(template_name))
@@ -486,8 +486,8 @@ def render_article(article: dict[str, Any]) -> str:
     return rendered
 
 
-def find_content_images(article: dict[str, Any]) -> list[dict[str, Any]]:
-    images: list[dict[str, Any]] = []
+def find_content_images(article: Dict[str, Any]) -> List[Dict[str, Any]]:
+    images: List[Dict[str, Any]] = []
     headline = article.get("headline") or {}
     if isinstance(headline.get("image"), dict):
         images.append(headline["image"])
@@ -508,9 +508,9 @@ def is_wechat_image_url(url: str) -> bool:
     return any(pattern in host for pattern in WECHAT_IMAGE_HOST_PATTERNS)
 
 
-def validate_article(article: dict[str, Any], *, html_text: Optional[str] = None) -> ValidationResult:
-    errors: list[str] = []
-    warnings: list[str] = []
+def validate_article(article: Dict[str, Any], *, html_text: Optional[str] = None) -> ValidationResult:
+    errors: List[str] = []
+    warnings: List[str] = []
 
     template_name = str(article.get("template") or "").strip()
     templates = available_templates()

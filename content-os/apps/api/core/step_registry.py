@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, List, Type
 
 
 class StepRegistry:
@@ -10,7 +10,7 @@ class StepRegistry:
     decorator. The pipeline engine looks up executors by step type at runtime.
     """
 
-    _executors: dict[str, type] = {}
+    _executors: Dict[str, type] = {}
 
     @classmethod
     def register(cls, step_type: str):
@@ -42,11 +42,11 @@ class StepRegistry:
         return cls._executors[step_type]
 
     @classmethod
-    def available_steps(cls) -> list[dict[str, Any]]:
+    def available_steps(cls) -> List[Dict[str, Any]]:
         """Return list of available step types with their schemas."""
-        result: list[dict[str, Any]] = []
+        result: List[Dict[str, Any]] = []
         for step_type, executor_class in sorted(cls._executors.items()):
-            entry: dict[str, Any] = {
+            entry: Dict[str, Any] = {
                 "step_type": step_type,
                 "name": getattr(executor_class, "name", step_type),
                 "description": getattr(executor_class, "description", ""),

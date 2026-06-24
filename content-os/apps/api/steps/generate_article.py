@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from sqlalchemy import select
 
@@ -11,7 +11,7 @@ from steps.base import StepExecutor
 
 
 # JSON Schema describing the expected article structure.
-ARTICLE_JSON_SCHEMA: dict[str, Any] = {
+ARTICLE_JSON_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "properties": {
         "template": {
@@ -92,7 +92,7 @@ class GenerateArticleStep(StepExecutor):
         max_tokens = llm_config.get("max_tokens", 4096)
 
         # Build variables for prompt rendering.
-        variables: dict[str, Any] = {
+        variables: Dict[str, Any] = {
             "sources": source_bundle,
             "source_count": source_bundle.get("count", 0) if isinstance(source_bundle, dict) else 0,
             "template_key": config.get("template_key", ""),
@@ -134,7 +134,7 @@ class GenerateArticleStep(StepExecutor):
             logs=logs,
         )
 
-    async def _resolve_prompt_content(self, config: dict[str, Any]) -> tuple[str, Optional[dict]]:
+    async def _resolve_prompt_content(self, config: Dict[str, Any]) -> Tuple[str, Optional[Dict]]:
         """Resolve prompt content and output schema from direct config or DB.
 
         Returns a tuple of (content, output_schema).  output_schema may be
@@ -171,7 +171,7 @@ class GenerateArticleStep(StepExecutor):
 
         return "", None
 
-    async def _resolve_llm_config(self, config: dict[str, Any]) -> dict[str, Any]:
+    async def _resolve_llm_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """Resolve LLM config from direct values or DB lookup."""
         # Direct config takes priority.
         if config.get("provider") and config.get("api_key"):
@@ -219,7 +219,7 @@ class GenerateArticleStep(StepExecutor):
         }
 
     @staticmethod
-    def _validate_article_json(article_json: dict[str, Any]) -> None:
+    def _validate_article_json(article_json: Dict[str, Any]) -> None:
         """Validate that the generated JSON has required top-level fields."""
         required_fields = ["template", "meta", "headline", "sections"]
         missing = [f for f in required_fields if f not in article_json]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from typing import List
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +12,7 @@ from schemas.llm_config import LLMConfigCreate, LLMConfigResponse
 router = APIRouter(prefix="/api/llm-configs", tags=["llm-configs"])
 
 
-@router.get("", response_model=list[LLMConfigResponse])
+@router.get("", response_model=List[LLMConfigResponse])
 async def list_llm_configs(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(LLMConfig).order_by(LLMConfig.created_at.desc()))
     configs = result.scalars().all()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any
+from typing import Any, Dict, List
 
 
 class PromptEngine:
@@ -10,7 +10,7 @@ class PromptEngine:
 
     VARIABLE_PATTERN = re.compile(r"\{\{(\w+)\}\}")
 
-    def render(self, template: str, variables: dict[str, Any]) -> str:
+    def render(self, template: str, variables: Dict[str, Any]) -> str:
         """Replace {{variable_name}} with values from variables dict.
 
         Supports: {{sources}}, {{article}}, {{context}}, {{template_key}}, etc.
@@ -32,11 +32,11 @@ class PromptEngine:
 
         return self.VARIABLE_PATTERN.sub(replacer, template)
 
-    def extract_variables(self, template: str) -> list[str]:
+    def extract_variables(self, template: str) -> List[str]:
         """Extract all variable names from template."""
         return list(set(self.VARIABLE_PATTERN.findall(template)))
 
-    def validate_variables(self, template: str, variables: dict[str, Any]) -> dict[str, Any]:
+    def validate_variables(self, template: str, variables: Dict[str, Any]) -> Dict[str, Any]:
         """Check which variables are missing.
 
         Returns a dict with:

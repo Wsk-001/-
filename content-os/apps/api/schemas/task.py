@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -47,4 +47,4 @@ class TaskResponse(BaseModel):
     started_at: Optional[datetime]
     finished_at: Optional[datetime]
     created_at: datetime
-    steps: list[TaskStepResponse] = []
+    steps: List[TaskStepResponse] = []

@@ -27,6 +27,35 @@ celery_app.conf.update(
 )
 
 
+# FIX: _execute_pipeline now delegates to PipelineEngine instead of
+# reimplementing a broken version that marks all steps as "success"
+# without actually executing any step logic.
+async def _execute_pipeline(task_id: str) -> dict:
+    from core.database import async_session_factory
+    from core.event_bus import EventBus
+    from core.pipeline_engine import PipelineEngine
+    from core.step_registry import StepRegistry
+    from uuid import UUID
+
+    event_bus = EventBus(settings.REDIS_URL)
+
+    async with async_session_factory() as db:
+        engine = PipelineEngine(
+            db_session=db,
+            step_registry=StepRegistry,
+            event_bus=event_bus,
+            storage=None,
+        )
+        try:
+            await engine.run_task(UUID(task_id))
+            return {"status": "success", "task_id": task_id}
+        except Exception as exc:
+            logger.error(f"PipelineEngine execution failed for task {task_id}: {exc}")
+            return {"status": "failed", "task_id": task_id, "error": str(exc)}
+        finally:
+            await event_bus.close()
+
+
 @celery_app.task(name="run_pipeline_task", bind=True, max_retries=3)
 def run_pipeline_task(self, task_id: str) -> dict:
     logger.info(f"Starting pipeline execution for task {task_id}")
@@ -37,56 +66,3 @@ def run_pipeline_task(self, task_id: str) -> dict:
     except Exception as exc:
         logger.error(f"Pipeline execution failed for task {task_id}: {exc}")
         raise self.retry(exc=exc, countdown=30)
-
-
-async def _execute_pipeline(task_id: str) -> dict:
-    from sqlalchemy import select
-    from core.database import async_session_factory
-    from models.task import Task, TaskStep
-    from datetime import datetime, timezone
-
-    async with async_session_factory() as db:
-        result = await db.execute(
-            select(Task).where(Task.id == task_id)
-        )
-        task = result.scalar_one_or_none()
-
-        if task is None:
-            return {"status": "error", "message": f"Task {task_id} not found"}
-
-        task.status = "running"
-        task.started_at = datetime.now(timezone.utc)
-        await db.commit()
-
-        result = await db.execute(
-            select(TaskStep).where(TaskStep.task_id == task_id).order_by(TaskStep.step_key)
-        )
-        steps = result.scalars().all()
-
-        completed_steps = 0
-        total_steps = len(steps)
-
-        for step in steps:
-            if not step.enabled if hasattr(step, "enabled") else True:
-                step.status = "running"
-                step.started_at = datetime.now(timezone.utc)
-                await db.commit()
-
-                step.status = "success"
-                step.finished_at = datetime.now(timezone.utc)
-                if step.started_at:
-                    delta = step.finished_at - step.started_at
-                    step.duration_ms = int(delta.total_seconds() * 1000)
-                step.outputs = {"result": "completed"}
-                completed_steps += 1
-
-                task.progress = int((completed_steps / total_steps) * 100) if total_steps > 0 else 100
-                task.current_step_key = step.step_key
-                await db.commit()
-
-        task.status = "success"
-        task.finished_at = datetime.now(timezone.utc)
-        task.progress = 100
-        await db.commit()
-
-        return {"status": "success", "task_id": task_id}

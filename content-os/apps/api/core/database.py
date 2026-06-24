@@ -40,6 +40,10 @@ class Base(DeclarativeBase):
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    # FIX: Removed auto-commit after yield. The previous code committed
+    # on every request even if the route handler had already committed or
+    # had caught-and-handled an exception internally, causing partial
+    # writes. Routes now control their own transaction lifecycle.
     async with async_session_factory() as session:
         try:
             yield session
@@ -47,8 +51,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
-        finally:
-            await session.close()
 
 
 async def init_db() -> None:

@@ -32,24 +32,55 @@ DEFAULT_LLM_CONFIGS = [
     {"name": "DeepSeek Chat", "provider": "deepseek", "model": "deepseek-chat", "temperature": 0.7, "max_tokens": 4096, "is_default": False},
 ]
 
-DEFAULT_ARTICLE_PROMPT_CONTENT = """你是一位专业的内容编辑。请根据以下情报源，撰写一篇高质量的每日情报文章。
+DEFAULT_ARTICLE_PROMPT_CONTENT = """你是一位专业的内容编辑。请根据以下情报源，生成一篇微信公众号文章的 JSON 数据。
 
 ## 情报源
 {{sources}}
 
-## 要求
-1. 文章标题简洁有力，不超过30个字
-2. 每条情报用小标题分隔
-3. 每条情报包含：标题、摘要、分析
-4. 语言专业但易懂
-5. 总字数控制在800-1500字
+## 模板
+{{template_key}}
 
 ## 输出格式
-请以 JSON 格式输出，包含以下字段：
-- title: 文章标题
-- summary: 文章摘要
-- content: 文章正文（Markdown格式）
-- tags: 标签列表"""
+请严格以 JSON 格式输出，结构如下：
+```json
+{
+  "template": "{{template_key}}",
+  "meta": {
+    "title": "文章标题（不超过32字）",
+    "digest": "文章摘要（不超过128字）",
+    "author": "39Claw",
+    "date": "2026-06-23"
+  },
+  "headline": {
+    "title": "头条标题",
+    "body": ["第一段正文", "第二段正文"],
+    "source": "来源"
+  },
+  "sections": [
+    {
+      "en": "BRIEFING",
+      "cn": "要闻",
+      "blocks": [
+        {
+          "type": "card",
+          "number": "01",
+          "title": "卡片标题",
+          "body": "卡片正文",
+          "source": "来源"
+        }
+      ]
+    }
+  ],
+  "cta": "你最关注哪一点？欢迎留言讨论。"
+}
+```
+
+## 写作要求
+1. 标题简洁有力，不超过32字
+2. 每条情报用 card 类型 block
+3. 语言专业但易懂，关键数据用红色加粗
+4. 总字数控制在800-1500字
+5. 只输出 JSON，不要输出其他内容"""
 
 
 async def seed() -> None:
@@ -93,14 +124,16 @@ async def seed() -> None:
             content=DEFAULT_ARTICLE_PROMPT_CONTENT,
             variables_schema=[
                 {"name": "sources", "type": "string", "description": "情报源内容"},
+                {"name": "template_key", "type": "string", "description": "文章模板名称"},
             ],
             output_schema={
                 "type": "object",
+                "required": ["template", "meta", "headline", "sections"],
                 "properties": {
-                    "title": {"type": "string"},
-                    "summary": {"type": "string"},
-                    "content": {"type": "string"},
-                    "tags": {"type": "array", "items": {"type": "string"}},
+                    "template": {"type": "string"},
+                    "meta": {"type": "object"},
+                    "headline": {"type": "object"},
+                    "sections": {"type": "array"},
                 },
             },
             model_hint="gpt-4o",

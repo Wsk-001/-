@@ -58,10 +58,20 @@ async def websocket_task_events(websocket: WebSocket, task_id: str):
     await pubsub.subscribe(channel)
 
     try:
-        while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-            if message and message["type"] == "message":
-                await websocket.send_text(message["data"])
+        # FIX: Use async for pubsub.listen() instead of while-loop with
+        # get_message(). The old get_message() call returns immediately
+        # when no message is available (timeout param is ignored by
+        # aioredis), causing a tight CPU-spin loop.
+        async for message in pubsub.listen():
+            if message is None:
+                continue
+            msg_type = message.get("type")
+            if msg_type != "message":
+                continue
+            data = message.get("data")
+            if data is None:
+                continue
+            await websocket.send_text(data if isinstance(data, str) else data.decode("utf-8"))
     except WebSocketDisconnect:
         pass
     finally:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ArticleCreate(BaseModel):
@@ -14,12 +14,12 @@ class ArticleCreate(BaseModel):
 
 
 class ArticleResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True, by_alias=True)
 
     id: uuid.UUID
     task_id: uuid.UUID | None
     version: int
-    article_json: dict
+    article_json: dict = Field(alias="content")
     template_key: str | None
     is_current: bool
     created_by: str

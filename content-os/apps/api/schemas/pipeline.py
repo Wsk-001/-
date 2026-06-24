@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -12,24 +13,24 @@ class PipelineStepCreate(BaseModel):
     name: str
     display_order: int = 0
     config: dict = {}
-    prompt_id: uuid.UUID | None = None
-    llm_config_id: uuid.UUID | None = None
+    prompt_id: Optional[uuid.UUID] = None
+    llm_config_id: Optional[uuid.UUID] = None
     depends_on: list[str] = []
     enabled: bool = True
     retry_policy: dict = {}
 
 
 class PipelineStepUpdate(BaseModel):
-    step_key: str | None = None
-    step_type: str | None = None
-    name: str | None = None
-    display_order: int | None = None
-    config: dict | None = None
-    prompt_id: uuid.UUID | None = None
-    llm_config_id: uuid.UUID | None = None
-    depends_on: list[str] | None = None
-    enabled: bool | None = None
-    retry_policy: dict | None = None
+    step_key: Optional[str] = None
+    step_type: Optional[str] = None
+    name: Optional[str] = None
+    display_order: Optional[int] = None
+    config: Optional[dict] = None
+    prompt_id: Optional[uuid.UUID] = None
+    llm_config_id: Optional[uuid.UUID] = None
+    depends_on: Optional[list[str]] = None
+    enabled: Optional[bool] = None
+    retry_policy: Optional[dict] = None
 
 
 class PipelineStepResponse(BaseModel):
@@ -42,8 +43,8 @@ class PipelineStepResponse(BaseModel):
     name: str
     display_order: int
     config: dict
-    prompt_id: uuid.UUID | None
-    llm_config_id: uuid.UUID | None
+    prompt_id: Optional[uuid.UUID]
+    llm_config_id: Optional[uuid.UUID]
     depends_on: list
     enabled: bool
     retry_policy: dict
@@ -51,17 +52,17 @@ class PipelineStepResponse(BaseModel):
 
 class PipelineCreate(BaseModel):
     name: str
-    description: str | None = None
+    description: Optional[str] = None
     template_key: str = "daily-intelligence"
     is_default: bool = False
     steps: list[PipelineStepCreate] = []
 
 
 class PipelineUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    template_key: str | None = None
-    is_default: bool | None = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    template_key: Optional[str] = None
+    is_default: Optional[bool] = None
 
 
 class PipelineResponse(BaseModel):
@@ -70,7 +71,7 @@ class PipelineResponse(BaseModel):
     id: uuid.UUID
     owner_id: uuid.UUID
     name: str
-    description: str | None
+    description: Optional[str]
     template_key: str
     is_default: bool
     version: int

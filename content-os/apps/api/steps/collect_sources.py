@@ -4,7 +4,7 @@ from core.compat import to_thread
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 from urllib.request import Request, urlopen
 import re
 
@@ -29,7 +29,7 @@ class TextExtractor(HTMLParser):
         self._in_title = False
         self.chunks: list[str] = []
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
         if tag.lower() == "title":
             self._in_title = True
 

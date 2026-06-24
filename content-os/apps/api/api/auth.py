@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
 from core.database import get_db
 from core.config import settings
@@ -60,7 +61,7 @@ _bearer_scheme = HTTPBearer(auto_error=False)
 # FIX: Added get_current_user dependency that validates JWT tokens.
 # This prevents all API endpoints from being completely unprotected.
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """Validate JWT token and return the current user.

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 # ---------------------------------------------------------------------------
 # Patch TEMPLATES_DIR so article_lib reads from the content-os templates dir.
@@ -60,7 +60,7 @@ def _safe_fragment(value: str) -> str:
     return cleaned or "image"
 
 
-def _cover_prompt(article: dict[str, Any], meta: dict[str, Any] | None = None) -> str:
+def _cover_prompt(article: dict[str, Any], meta: Optional[dict[str, Any]] = None) -> str:
     meta = meta if meta is not None else ensure_meta_defaults(article)
     title = meta.get("title") or "微信公众号封面"
     date_short = meta.get("date_short")
@@ -113,7 +113,7 @@ def _section_detail(section: dict[str, Any], block: dict[str, Any]) -> str:
     return ". ".join(part for part in text_bits if part)
 
 
-def _choose_section_subject(section: dict[str, Any]) -> dict[str, Any] | None:
+def _choose_section_subject(section: dict[str, Any]) -> Optional[dict[str, Any]]:
     for block in section.get("blocks") or []:
         if block.get("type", "card") in {"card", "opinion", "week-ahead"}:
             return block

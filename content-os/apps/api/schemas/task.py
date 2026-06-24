@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class TaskCreate(BaseModel):
     pipeline_id: uuid.UUID
-    title: str | None = None
+    title: Optional[str] = None
     inputs: dict = {}
 
 
@@ -24,11 +25,11 @@ class TaskStepResponse(BaseModel):
     inputs: dict
     outputs: dict
     attempt: int = Field(default=0, alias="retry_count")
-    error: str | None
-    stack_trace: str | None
-    started_at: datetime | None
-    finished_at: datetime | None
-    duration_ms: int | None
+    error: Optional[str]
+    stack_trace: Optional[str]
+    started_at: Optional[datetime]
+    finished_at: Optional[datetime]
+    duration_ms: Optional[int]
 
 
 class TaskResponse(BaseModel):
@@ -37,13 +38,13 @@ class TaskResponse(BaseModel):
     id: uuid.UUID
     pipeline_id: uuid.UUID
     owner_id: uuid.UUID
-    title: str | None
+    title: Optional[str]
     status: str
     inputs: dict
-    current_step_key: str | None
+    current_step_key: Optional[str]
     progress: int
-    error: str | None
-    started_at: datetime | None
-    finished_at: datetime | None
+    error: Optional[str]
+    started_at: Optional[datetime]
+    finished_at: Optional[datetime]
     created_at: datetime
     steps: list[TaskStepResponse] = []

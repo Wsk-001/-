@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -10,8 +11,8 @@ class PromptVersionCreate(BaseModel):
     content: str
     variables_schema: list = []
     output_schema: dict = {}
-    model_hint: str | None = None
-    changelog: str | None = None
+    model_hint: Optional[str] = None
+    changelog: Optional[str] = None
 
 
 class PromptVersionResponse(BaseModel):
@@ -23,37 +24,37 @@ class PromptVersionResponse(BaseModel):
     content: str
     variables_schema: list
     output_schema: dict
-    model_hint: str | None
-    changelog: str | None
+    model_hint: Optional[str]
+    changelog: Optional[str]
     created_at: datetime
 
 
 class PromptCreate(BaseModel):
     name: str
-    description: str | None = None
+    description: Optional[str] = None
     category: str
-    initial_version: PromptVersionCreate | None = None
+    initial_version: Optional[PromptVersionCreate] = None
 
 
 class PromptUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    category: str | None = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
 
 
 class PromptResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True, by_alias=True)
 
     id: uuid.UUID
-    owner_id: uuid.UUID | None
+    owner_id: Optional[uuid.UUID]
     name: str
-    description: str | None
+    description: Optional[str]
     category: str
-    current_version_id: uuid.UUID | None
+    current_version_id: Optional[uuid.UUID]
     created_at: datetime
-    current_version: PromptVersionResponse | None = None
+    current_version: Optional[PromptVersionResponse] = None
 
 
 class PromptDryRunRequest(BaseModel):
     variables: dict = {}
-    model_hint: str | None = None
+    model_hint: Optional[str] = None

@@ -7,7 +7,7 @@ import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 from urllib.parse import urlparse
 
 
@@ -79,7 +79,7 @@ def to_int_string(value: Any, fallback: str) -> str:
         return fallback
 
 
-def parse_iso_date(raw: str | None) -> date:
+def parse_iso_date(raw: Optional[str]) -> date:
     if raw:
         return datetime.strptime(raw, "%Y-%m-%d").date()
     return date.today()
@@ -142,7 +142,7 @@ def is_brutal_template(template_name: str) -> bool:
     return template_name == "neo-brutalism"
 
 
-def render_image_block(image: dict[str, Any] | None, *, template_name: str = "") -> str:
+def render_image_block(image: Optional[dict[str, Any]], *, template_name: str = "") -> str:
     if not image:
         return ""
     url = normalize_text(image.get("url"))
@@ -508,7 +508,7 @@ def is_wechat_image_url(url: str) -> bool:
     return any(pattern in host for pattern in WECHAT_IMAGE_HOST_PATTERNS)
 
 
-def validate_article(article: dict[str, Any], *, html_text: str | None = None) -> ValidationResult:
+def validate_article(article: dict[str, Any], *, html_text: Optional[str] = None) -> ValidationResult:
     errors: list[str] = []
     warnings: list[str] = []
 

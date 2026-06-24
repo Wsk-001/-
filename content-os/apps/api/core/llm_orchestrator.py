@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 
 import httpx
 
@@ -20,7 +20,7 @@ class LLMProvider(ABC):
     async def chat(
         self,
         messages: list[dict[str, Any]],
-        response_format: dict[str, Any] | None = None,
+        response_format: Optional[dict[str, Any]] = None,
         **kwargs: Any,
     ) -> str:
         """Send a chat completion request and return the raw response text.
@@ -39,7 +39,7 @@ class OpenAIProvider(LLMProvider):
     def __init__(
         self,
         api_key: str,
-        base_url: str | None = None,
+        base_url: Optional[str] = None,
         model: str = "gpt-4o",
         timeout: float = 120.0,
     ):
@@ -51,7 +51,7 @@ class OpenAIProvider(LLMProvider):
     async def chat(
         self,
         messages: list[dict[str, Any]],
-        response_format: dict[str, Any] | None = None,
+        response_format: Optional[dict[str, Any]] = None,
         **kwargs: Any,
     ) -> str:
         url = f"{self._base_url}/chat/completions"
@@ -108,7 +108,7 @@ class ClaudeProvider(LLMProvider):
     async def chat(
         self,
         messages: list[dict[str, Any]],
-        response_format: dict[str, Any] | None = None,
+        response_format: Optional[dict[str, Any]] = None,
         **kwargs: Any,
     ) -> str:
         url = "https://api.anthropic.com/v1/messages"
@@ -138,7 +138,7 @@ class ClaudeProvider(LLMProvider):
             payload["system"] = "\n\n".join(system_parts)
 
         # If structured output is requested, use tool_use.
-        tools: list[dict[str, Any]] | None = None
+        tools: Optional[list[dict[str, Any]]] = None
         if response_format is not None:
             schema = response_format.get("json_schema", {}).get("schema", response_format)
             tools = [
@@ -197,7 +197,7 @@ class DeepSeekProvider(LLMProvider):
     async def chat(
         self,
         messages: list[dict[str, Any]],
-        response_format: dict[str, Any] | None = None,
+        response_format: Optional[dict[str, Any]] = None,
         **kwargs: Any,
     ) -> str:
         url = f"{self._base_url}/chat/completions"
@@ -272,7 +272,7 @@ class LLMOrchestrator:
         output_schema: dict[str, Any],
         provider_name: str,
         api_key: str,
-        model: str | None = None,
+        model: Optional[str] = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Generate structured output from an LLM.

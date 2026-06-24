@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import select
 
@@ -134,7 +134,7 @@ class GenerateArticleStep(StepExecutor):
             logs=logs,
         )
 
-    async def _resolve_prompt_content(self, config: dict[str, Any]) -> tuple[str, dict | None]:
+    async def _resolve_prompt_content(self, config: dict[str, Any]) -> tuple[str, Optional[dict]]:
         """Resolve prompt content and output schema from direct config or DB.
 
         Returns a tuple of (content, output_schema).  output_schema may be

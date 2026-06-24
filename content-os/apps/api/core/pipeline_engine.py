@@ -4,7 +4,7 @@ import time
 import traceback
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import select
@@ -49,7 +49,7 @@ class _StepRuntime:
     """
 
     task_step: Any
-    pipeline_step: Any | None = None
+    pipeline_step: Optional[Any] = None
 
 
 class ArtifactStorage:
@@ -87,7 +87,7 @@ class PipelineEngine:
         db_session: AsyncSession,
         step_registry: type[StepRegistry],
         event_bus: EventBus,
-        storage: ArtifactStorage | None = None,
+        storage: Optional[ArtifactStorage] = None,
     ) -> None:
         self.db_session = db_session
         self.step_registry = step_registry
@@ -98,7 +98,7 @@ class PipelineEngine:
     # Public API
     # ------------------------------------------------------------------
 
-    async def run_task(self, task_id: UUID, resume_from_step: str | None = None) -> None:
+    async def run_task(self, task_id: UUID, resume_from_step: Optional[str] = None) -> None:
         """Execute a pipeline task.
 
         Steps:
@@ -451,7 +451,7 @@ class PipelineEngine:
     # Event helpers
     # ------------------------------------------------------------------
 
-    async def _emit(self, event: str, task_id: UUID, data: dict[str, Any] | None = None) -> None:
+    async def _emit(self, event: str, task_id: UUID, data: Optional[dict[str, Any]] = None) -> None:
         await self.event_bus.emit(event, str(task_id), data)
 
     # ------------------------------------------------------------------

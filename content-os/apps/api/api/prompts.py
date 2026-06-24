@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 import re
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -33,7 +34,7 @@ async def _get_default_owner_id(db: AsyncSession) -> uuid.UUID:
 
 @router.get("", response_model=list[PromptResponse])
 async def list_prompts(
-    category: str | None = None,
+    category: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),

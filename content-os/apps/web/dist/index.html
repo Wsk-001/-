@@ -147,7 +147,11 @@ select.form-control{appearance:auto}
   <div class="main">
     <div class="topbar">
       <h1 id="page-title">Dashboard</h1>
-      <div class="topbar-status"><span class="status-dot" id="api-dot"></span><span id="api-status">Connected</span></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-left:auto">
+        <div id="user-info" style="font-size:12px;color:var(--muted);display:none">${currentUser?.email || ''}</div>
+        <button id="logout-btn" class="btn btn-sm btn-secondary" style="display:none" onclick="logout()">Logout</button>
+        <div class="topbar-status"><span class="status-dot" id="api-dot"></span><span id="api-status">Connected</span></div>
+      </div>
     </div>
     <div class="content" id="page-content"></div>
   </div>
@@ -158,17 +162,25 @@ select.form-control{appearance:auto}
 const API_BASE = 'http://localhost:8000';
 let currentPage = 'dashboard';
 let pollingIntervals = [];
+let authToken = localStorage.getItem('contentos_token') || '';
+let currentUser = null;
 
 /* ============ UTILS ============ */
 function $(sel, ctx) { return (ctx || document).querySelector(sel); }
 function $$(sel, ctx) { return [...(ctx || document).querySelectorAll(sel)]; }
 
 async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...opts.headers };
+  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
   try {
-    const res = await fetch(API_BASE + path, {
-      headers: { 'Content-Type': 'application/json', ...opts.headers },
-      ...opts
-    });
+    const res = await fetch(API_BASE + path, { headers, ...opts });
+    if (res.status === 401) {
+      authToken = '';
+      currentUser = null;
+      localStorage.removeItem('contentos_token');
+      showLoginForm();
+      throw new Error('Session expired, please log in');
+    }
     if (!res.ok) {
       const err = await res.text().catch(() => res.statusText);
       throw new Error(`${res.status}: ${err}`);
@@ -222,6 +234,65 @@ function jsonPretty(obj) {
 function clearPolling() {
   pollingIntervals.forEach(id => clearInterval(id));
   pollingIntervals = [];
+}
+
+/* ============ LOGIN ============ */
+function showLoginForm() {
+  clearPolling();
+  const el = $('#page-content');
+  el.innerHTML = `<div style="max-width:380px;margin:60px auto">
+    <div class="card" style="padding:32px">
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">Content OS</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:24px">AI Content Production System</p>
+      <div class="form-group">
+        <label>Email</label>
+        <input class="form-control" id="login-email" type="email" value="editor@test.com" placeholder="Email address">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input class="form-control" id="login-password" type="password" value="password123" placeholder="Password">
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doLogin()">Log In</button>
+      <div id="login-error" style="color:var(--error);font-size:13px;margin-top:12px;display:none"></div>
+    </div>
+    <p style="text-align:center;color:var(--muted);font-size:12px;margin-top:16px">Default: editor@test.com / password123</p>
+  </div>`;
+  $('#login-email').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  $('#login-password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+}
+
+async function doLogin() {
+  const email = $('#login-email').value.trim();
+  const password = $('#login-password').value;
+  const errEl = $('#login-error');
+  errEl.style.display = 'none';
+  if (!email || !password) { errEl.textContent = 'Please enter email and password'; errEl.style.display = ''; return; }
+  try {
+    const data = await api('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+    authToken = data.access_token;
+    currentUser = data.user;
+    localStorage.setItem('contentos_token', authToken);
+    $('#user-info').textContent = data.user?.email || '';
+    $('#user-info').style.display = '';
+    $('#logout-btn').style.display = '';
+    toast('Welcome back, ' + (data.user?.name || data.user?.email || ''), 'success');
+    setApiStatus(true);
+    navigateTo(currentPage === 'dashboard' ? 'dashboard' : currentPage);
+  } catch (e) {
+    errEl.textContent = e.message || 'Login failed';
+    errEl.style.display = '';
+  }
+}
+
+function logout() {
+  authToken = '';
+  currentUser = null;
+  localStorage.removeItem('contentos_token');
+  showLoginForm();
+  toast('Logged out', 'info');
 }
 
 /* ============ NAVIGATION ============ */
@@ -717,15 +788,30 @@ async function loadTemplates() {
 
 /* ============ INIT ============ */
 document.addEventListener('DOMContentLoaded', () => {
-  navigateTo('dashboard');
-  // Periodic API health check
+  if (authToken) {
+    // Verify token is still valid
+    fetch(API_BASE + '/api/tasks', { headers: { 'Authorization': 'Bearer ' + authToken } })
+      .then(r => {
+        if (r.ok) {
+          setApiStatus(true);
+          $('#user-info').style.display = '';
+          $('#logout-btn').style.display = '';
+          navigateTo(currentPage);
+        } else if (r.status === 401) {
+          authToken = '';
+          localStorage.removeItem('contentos_token');
+          showLoginForm();
+        }
+      })
+      .catch(() => showLoginForm());
+  } else {
+    showLoginForm();
+  }
   setInterval(async () => {
     try {
-      await fetch(API_BASE + '/api/tasks', { method: 'HEAD' }).catch(() => fetch(API_BASE + '/'));
+      await fetch(API_BASE + '/health').catch(() => {});
       setApiStatus(true);
-    } catch {
-      setApiStatus(false);
-    }
+    } catch { setApiStatus(false); }
   }, 10000);
 });
 </script>

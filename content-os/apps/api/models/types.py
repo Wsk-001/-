@@ -30,7 +30,7 @@ if _IS_PG:
 
 else:
     class GUID(TypeDecorator):
-        """Cross-platform UUID type stored as String(36)."""
+        """Cross-platform UUID type stored as String(36). Kept as string to avoid aiosqlite compatibility issues."""
         impl = String(36)
         cache_ok = True
 
@@ -40,8 +40,7 @@ else:
             return value
 
         def process_result_value(self, value, dialect):
-            if value is not None:
-                return uuid.UUID(value)
+            # Keep as string to avoid sentinel mismatch in bulk inserts
             return value
 
     class JSONDict(TypeDecorator):

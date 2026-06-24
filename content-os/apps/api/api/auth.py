@@ -22,16 +22,23 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    from passlib.context import CryptContext
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    return pwd_context.verify(plain_password, hashed_password)
-
-
 def get_password_hash(password: str) -> str:
-    from passlib.context import CryptContext
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    return pwd_context.hash(password)
+    import hashlib
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    import hashlib
+    # Try sha256 first (our simple hash)
+    if len(hashed_password) == 64:
+        return hashlib.sha256(plain_password.encode('utf-8')).hexdigest() == hashed_password
+    # Fallback to bcrypt
+    try:
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception:
+        return False
 
 
 def create_access_token(data: dict) -> str:

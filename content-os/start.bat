@@ -60,7 +60,7 @@ echo        Using existing virtual environment ...
 call "%BASEDIR%apps\api\venv\Scripts\activate.bat"
 set USE_VENV=1
 set PIP_CMD=pip
-goto :install_deps
+goto :check_pip
 
 :try_create_venv
 echo        Trying to create virtual environment ...
@@ -71,12 +71,41 @@ echo        Virtual environment created.
 call "venv\Scripts\activate.bat"
 set USE_VENV=1
 set PIP_CMD=pip
-goto :install_deps
+goto :check_pip
 
 :no_venv
 echo        venv not available, installing directly ...
 
-:install_deps
+:check_pip
+echo        Checking pip ...
+%PIP_CMD% --version >nul 2>&1
+if not errorlevel 1 goto :pip_ok
+echo        pip not found, installing pip ...
+cd /d "%BASEDIR%"
+if exist "get-pip.py" goto :run_get_pip
+echo        Downloading get-pip.py ...
+if exist "%SystemRoot%\System32\curl.exe" (
+    curl -sS -o get-pip.py https://bootstrap.pypa.io/get-pip.py
+) else (
+    "%PYTHON_CMD%" -c "from urllib.request import urlretrieve; urlretrieve('https://bootstrap.pypa.io/get-pip.py', 'get-pip.py')"
+)
+if not exist "get-pip.py" (
+    echo        [ERROR] Could not download get-pip.py
+    echo        Please install pip manually or reinstall Python with pip.
+    echo.
+    pause
+    exit /b 1
+)
+:run_get_pip
+"%PYTHON_CMD%" get-pip.py
+if errorlevel 1 (
+    echo        [ERROR] Failed to install pip!
+    pause
+    exit /b 1
+)
+echo        pip installed successfully.
+
+:pip_ok
 echo.
 echo        Upgrading pip ...
 %PIP_CMD% install --upgrade pip

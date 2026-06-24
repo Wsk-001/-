@@ -6,6 +6,8 @@ from datetime import datetime
 from sqlalchemy import String, Text, Integer, DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from typing import Optional
+
 from models.types import GUID, JSONDict, uuid_default
 
 from core.database import Base
@@ -17,14 +19,14 @@ class Task(Base):
     id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid_default)
     pipeline_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("pipelines.id"), nullable=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("users.id"), nullable=False)
-    title: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     status: Mapped[str] = mapped_column(String(50), default="queued")
     inputs: Mapped[dict] = mapped_column(JSONDict, default=dict)
-    current_step_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    current_step_key: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     progress: Mapped[int] = mapped_column(Integer, default=0)
-    error: Mapped[Text | None] = mapped_column(Text, nullable=True)
-    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     pipeline = relationship("Pipeline", back_populates="tasks")
@@ -48,10 +50,10 @@ class TaskStep(Base):
     inputs: Mapped[dict] = mapped_column(JSONDict, default=dict)
     outputs: Mapped[dict] = mapped_column(JSONDict, default=dict)
     attempt: Mapped[int] = mapped_column(Integer, default=1)
-    error: Mapped[Text | None] = mapped_column(Text, nullable=True)
-    stack_trace: Mapped[Text | None] = mapped_column(Text, nullable=True)
-    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    stack_trace: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    duration_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     task = relationship("Task", back_populates="steps")

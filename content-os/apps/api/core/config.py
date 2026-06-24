@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql+asyncpg://contentos:contentos_dev@localhost:5432/contentos"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./dev.db"
     REDIS_URL: str = "redis://localhost:6379/0"
     MINIO_ENDPOINT: str = "localhost:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"

@@ -6,6 +6,8 @@ from datetime import datetime
 from sqlalchemy import String, Boolean, Integer, Float, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from typing import Optional
+
 from models.types import GUID, uuid_default
 
 from core.database import Base
@@ -18,8 +20,8 @@ class LLMConfig(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(50), nullable=False)
     model: Mapped[str] = mapped_column(String(100), nullable=False)
-    api_key_encrypted: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    base_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    api_key_encrypted: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    base_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     temperature: Mapped[float] = mapped_column(Float, default=0.7)
     max_tokens: Mapped[int] = mapped_column(Integer, default=4096)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)

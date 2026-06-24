@@ -6,6 +6,8 @@ from datetime import datetime
 from sqlalchemy import String, Text, Boolean, Integer, DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from typing import Optional
+
 from models.types import GUID, JSONDict, uuid_default
 
 from core.database import Base
@@ -17,7 +19,7 @@ class Pipeline(Base):
     id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid_default)
     owner_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("users.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Text | None] = mapped_column(Text, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     template_key: Mapped[str] = mapped_column(String(100), default="daily-intelligence")
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
     version: Mapped[int] = mapped_column(Integer, default=1)
@@ -39,8 +41,8 @@ class PipelineStep(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     display_order: Mapped[int] = mapped_column(Integer, default=0)
     config: Mapped[dict] = mapped_column(JSONDict, default=dict)
-    prompt_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), ForeignKey("prompts.id"), nullable=True)
-    llm_config_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), ForeignKey("llm_configs.id"), nullable=True)
+    prompt_id: Mapped[Optional[uuid.UUID]] = mapped_column(GUID(), ForeignKey("prompts.id"), nullable=True)
+    llm_config_id: Mapped[Optional[uuid.UUID]] = mapped_column(GUID(), ForeignKey("llm_configs.id"), nullable=True)
     depends_on: Mapped[list] = mapped_column(JSONDict, default=list)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     retry_policy: Mapped[dict] = mapped_column(JSONDict, default=dict)

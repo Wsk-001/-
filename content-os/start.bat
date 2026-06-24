@@ -7,127 +7,56 @@ echo ============================================
 echo.
 
 set BASEDIR=%~dp0
-set PYDIR=%BASEDIR%tools\python38
 
 :: ============================================================
-::  STEP 1: Setup Python (embeddable, no installer needed)
+::  STEP 1: Find Python
 :: ============================================================
 echo [1/6] Checking Python ...
 set PYTHON_CMD=
 
-:: Check existing Python first
+:: Check PATH
 python --version >nul 2>&1
 if not errorlevel 1 set PYTHON_CMD=python
 
-if "%PYTHON_CMD%"=="" (
-    python3 --version >nul 2>&1
-    if not errorlevel 1 set PYTHON_CMD=python3
-)
+:: Check common install locations (most likely first)
+if "%PYTHON_CMD%"=="" if exist "%LOCALAPPDATA%\Programs\Python\Python38\python.exe" set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python38\python.exe
+if "%PYTHON_CMD%"=="" if exist "%LOCALAPPDATA%\Programs\Python\Python310\python.exe" set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python310\python.exe
+if "%PYTHON_CMD%"=="" if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python311\python.exe
+if "%PYTHON_CMD%"=="" if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python312\python.exe
+if "%PYTHON_CMD%"=="" if exist "C:\Python38\python.exe" set PYTHON_CMD=C:\Python38\python.exe
+if "%PYTHON_CMD%"=="" if exist "C:\Python310\python.exe" set PYTHON_CMD=C:\Python310\python.exe
+if "%PYTHON_CMD%"=="" if exist "C:\Python311\python.exe" set PYTHON_CMD=C:\Python311\python.exe
+if "%PYTHON_CMD%"=="" if exist "C:\Python312\python.exe" set PYTHON_CMD=C:\Python312\python.exe
 
+:: Check py launcher
+if "%PYTHON_CMD%"=="" (
+    py -3 --version >nul 2>&1
+    if not errorlevel 1 set PYTHON_CMD=py -3
+)
 if "%PYTHON_CMD%"=="" (
     py --version >nul 2>&1
     if not errorlevel 1 set PYTHON_CMD=py
 )
 
-if "%PYTHON_CMD%"=="" if exist "C:\Python38\python.exe" set PYTHON_CMD=C:\Python38\python.exe
-if "%PYTHON_CMD%"=="" if exist "C:\Python310\python.exe" set PYTHON_CMD=C:\Python310\python.exe
-if "%PYTHON_CMD%"=="" if exist "%LOCALAPPDATA%\Programs\Python\Python38\python.exe" set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python38\python.exe
-if "%PYTHON_CMD%"=="" if exist "%LOCALAPPDATA%\Programs\Python\Python310\python.exe" set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python310\python.exe
-
-:: Check our bundled embeddable Python
-if "%PYTHON_CMD%"=="" if exist "%PYDIR%\python.exe" set PYTHON_CMD=%PYDIR%\python.exe
-
-:: --- Auto download embeddable Python (no installer, just unzip) ---
-if "%PYTHON_CMD%"=="" (
-    echo.
-    echo    Python not found. Downloading portable Python 3.8.10 ...
-    echo    (No installer needed - just extract and run)
-    echo.
-
-    set PYZIP=%BASEDIR%tools\python38.zip
-    set PYURL=https://www.python.org/ftp/python/3.8.10/python-3.8.10-embed-amd64.zip
-
-    if not exist "%BASEDIR%tools" mkdir "%BASEDIR%tools"
-
-    echo    Downloading ...
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile('https://www.python.org/ftp/python/3.8.10/python-3.8.10-embed-amd64.zip','%BASEDIR%tools\python38.zip')" 2>nul
-
-    if not exist "%BASEDIR%tools\python38.zip" (
-        bitsadmin /transfer pydl /download /priority foreground "https://www.python.org/ftp/python/3.8.10/python-3.8.10-embed-amd64.zip" "%BASEDIR%tools\python38.zip" >nul 2>&1
-    )
-
-    if not exist "%BASEDIR%tools\python38.zip" (
-        certutil -urlcache -split -f "https://www.python.org/ftp/python/3.8.10/python-3.8.10-embed-amd64.zip" "%BASEDIR%tools\python38.zip" >nul 2>&1
-    )
-
-    if exist "%BASEDIR%tools\python38.zip" (
-        echo    Extracting ...
-        if not exist "%PYDIR%" mkdir "%PYDIR%"
-
-        :: Try PowerShell unzip first
-        powershell -Command "Expand-Archive -Path '%BASEDIR%tools\python38.zip' -DestinationPath '%PYDIR%' -Force" 2>nul
-
-        :: If PowerShell failed, try tar (Win10+)
-        if not exist "%PYDIR%\python.exe" (
-            tar -xf "%BASEDIR%tools\python38.zip" -C "%PYDIR%" 2>nul
-        )
-
-        :: If tar failed, try VBScript unzip
-        if not exist "%PYDIR%\python.exe" (
-            echo    Using VBScript to unzip ...
-            echo Set objShell = CreateObject("Shell.Application") > "%TEMP%\unzip.vbs"
-            echo Set objZip = objShell.NameSpace("%BASEDIR%tools\python38.zip") >> "%TEMP%\unzip.vbs"
-            echo Set objDest = objShell.NameSpace("%PYDIR%") >> "%TEMP%\unzip.vbs"
-            echo objDest.CopyHere objZip.Items, 256 >> "%TEMP%\unzip.vbs"
-            cscript //nologo "%TEMP%\unzip.vbs" 2>nul
-            del "%TEMP%\unzip.vbs" >nul 2>&1
-        )
-
-        if exist "%PYDIR%\python.exe" (
-            echo    Python 3.8.10 portable ready!
-            del "%BASEDIR%tools\python38.zip" >nul 2>&1
-
-            :: Enable pip in embeddable Python
-            echo    Setting up pip ...
-            if exist "%PYDIR%\python38._pth" (
-                echo Lib\site-packages>> "%PYDIR%\python38._pth"
-                echo .>> "%PYDIR%\python38._pth"
-                echo Lib>> "%PYDIR%\python38._pth"
-                echo import site>> "%PYDIR%\python38._pth"
-            )
-            if not exist "%PYDIR%\Lib" mkdir "%PYDIR%\Lib"
-            if not exist "%PYDIR%\Lib\site-packages" mkdir "%PYDIR%\Lib\site-packages"
-
-            :: Download get-pip.py
-            powershell -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile('https://bootstrap.pypa.io/get-pip.py','%PYDIR%\get-pip.py')" 2>nul
-            if exist "%PYDIR%\get-pip.py" (
-                "%PYDIR%\python.exe" "%PYDIR%\get-pip.py" --no-warn-script-location 2>nul
-                del "%PYDIR%\get-pip.py" >nul 2>&1
-            )
-
-            set PYTHON_CMD=%PYDIR%\python.exe
-        ) else (
-            echo.
-            echo    [ERROR] Failed to extract Python.
-            echo    Please install Python 3.8+ manually:
-            echo      https://www.python.org/downloads/
-            echo.
-            pause
-            exit
-        )
-    ) else (
-        echo.
-        echo    [ERROR] Could not download Python.
-        echo    Please install Python 3.8+ manually:
-        echo      https://www.python.org/downloads/
-        echo.
-        pause
-        exit
-    )
-)
+:: Check our portable python
+if "%PYTHON_CMD%"=="" if exist "%BASEDIR%tools\python38\python.exe" set PYTHON_CMD=%BASEDIR%tools\python38\python.exe
 
 if "%PYTHON_CMD%"=="" (
-    echo [ERROR] Python not found.
+    echo.
+    echo [ERROR] Python not found!
+    echo.
+    echo I searched these locations and found nothing:
+    echo   - PATH environment variable
+    echo   - C:\Python38\python.exe
+    echo   - C:\Python310\python.exe
+    echo   - %LOCALAPPDATA%\Programs\Python\Python38\python.exe
+    echo   - %LOCALAPPDATA%\Programs\Python\Python310\python.exe
+    echo.
+    echo Possible fixes:
+    echo   1. Restart your computer (PATH needs refresh after install)
+    echo   2. Or reinstall Python and CHECK "Add Python to PATH"
+    echo   3. Or tell me where you installed Python
+    echo.
     pause
     exit
 )
@@ -135,7 +64,7 @@ if "%PYTHON_CMD%"=="" (
 echo        Python found: %PYTHON_CMD%
 
 :: ============================================================
-::  STEP 2: Setup Node.js
+::  STEP 2: Find Node.js
 :: ============================================================
 echo [2/6] Checking Node.js ...
 set NODE_CMD=
@@ -148,9 +77,9 @@ if "%NODE_CMD%"=="" if exist "C:\Program Files (x86)\nodejs\node.exe" set NODE_C
 
 if "%NODE_CMD%"=="" (
     echo.
-    echo    Node.js not found. Please install Node.js 18+ manually:
-    echo      https://nodejs.org/
-    echo    Then run this script again.
+    echo [ERROR] Node.js not found!
+    echo   Download from: https://nodejs.org/
+    echo   Install, then run this script again.
     echo.
     pause
     exit
@@ -164,6 +93,7 @@ echo        Node.js found: %NODE_CMD%
 echo [3/6] Setting environment ...
 set PYTHONPATH=%BASEDIR%apps\api
 set DATABASE_URL=sqlite+aiosqlite:///./dev.db
+echo        OK
 
 :: ============================================================
 ::  STEP 4: Install backend dependencies
@@ -175,20 +105,34 @@ if not exist "%BASEDIR%apps\api\venv\Scripts\activate.bat" (
     cd /d "%BASEDIR%apps\api"
     "%PYTHON_CMD%" -m venv venv
     if errorlevel 1 (
-        echo [ERROR] Failed to create venv.
-        echo Trying without venv ...
-        set VENV=0
+        echo.
+        echo [ERROR] Failed to create virtual environment.
+        echo This may be because Python 3.8 embeddable does not support venv.
+        echo Trying direct install instead ...
+        echo.
+        set USE_VENV=0
     ) else (
-        set VENV=1
+        set USE_VENV=1
     )
 ) else (
-    set VENV=1
+    set USE_VENV=1
 )
 
-if "%VENV%"=="1" call "%BASEDIR%apps\api\venv\Scripts\activate.bat"
+if "%USE_VENV%"=="1" (
+    call "%BASEDIR%apps\api\venv\Scripts\activate.bat"
+    echo        Virtual environment activated.
+)
 
-echo        Installing Python packages ...
-pip install -r "%BASEDIR%apps\api\requirements.txt" --quiet 2>nul
+echo        Installing Python packages (may take a few minutes)...
+if "%USE_VENV%"=="1" (
+    pip install -r "%BASEDIR%apps\api\requirements.txt" 2>nul
+) else (
+    "%PYTHON_CMD%" -m pip install -r "%BASEDIR%apps\api\requirements.txt" 2>nul
+)
+
+if errorlevel 1 (
+    echo        [WARN] Some packages failed to install, trying to continue...
+)
 
 :: ============================================================
 ::  STEP 5: Install frontend dependencies
@@ -196,14 +140,18 @@ pip install -r "%BASEDIR%apps\api\requirements.txt" --quiet 2>nul
 echo [5/6] Installing frontend dependencies ...
 
 if not exist "%BASEDIR%apps\web\node_modules" (
-    echo        Installing npm packages (first run, may take a few minutes) ...
+    echo        Installing npm packages (first run, may take a few minutes)...
     cd /d "%BASEDIR%apps\web"
     call npm install
     if errorlevel 1 (
+        echo.
         echo [ERROR] npm install failed.
+        echo.
         pause
         exit
     )
+) else (
+    echo        Already installed.
 )
 
 :: ============================================================
@@ -213,8 +161,12 @@ echo [6/6] Initializing database ...
 cd /d "%BASEDIR%apps\api"
 
 if not exist "dev.db" (
-    echo        Creating database and seeding data ...
-    python seed.py
+    echo        Creating database ...
+    "%PYTHON_CMD%" seed.py
+    if errorlevel 1 (
+        echo        [WARN] Seed failed, trying python command ...
+        python seed.py
+    )
 )
 
 :: ============================================================
@@ -227,17 +179,22 @@ echo ============================================
 echo.
 
 echo [START] Backend API  -> http://localhost:8000
-start "ContentOS-API" cmd /k "cd /d %BASEDIR%apps\api && call venv\Scripts\activate.bat && set PYTHONPATH=%BASEDIR%apps\api && set DATABASE_URL=sqlite+aiosqlite:///./dev.db && python -m uvicorn main:app --host 0.0.0.0 --port 8000"
+if "%USE_VENV%"=="1" (
+    start "ContentOS-API" cmd /k "cd /d %BASEDIR%apps\api && call venv\Scripts\activate.bat && set PYTHONPATH=%BASEDIR%apps\api && set DATABASE_URL=sqlite+aiosqlite:///./dev.db && python -m uvicorn main:app --host 0.0.0.0 --port 8000"
+) else (
+    start "ContentOS-API" cmd /k "cd /d %BASEDIR%apps\api && set PYTHONPATH=%BASEDIR%apps\api && set DATABASE_URL=sqlite+aiosqlite:///./dev.db && %PYTHON_CMD% -m uvicorn main:app --host 0.0.0.0 --port 8000"
+)
 
 echo [START] Frontend Web -> http://localhost:3000
 start "ContentOS-Web" cmd /k "cd /d %BASEDIR%apps\web && npm run dev"
 
-echo Waiting for services to start ...
-ping -n 8 127.0.0.1 >nul
+echo.
+echo Waiting for services to start (8 seconds) ...
+ping -n 9 127.0.0.1 >nul
 
 echo.
 echo ============================================
-echo    Services started!
+echo    Done!
 echo ============================================
 echo.
 echo    Backend API:  http://localhost:8000

@@ -76,6 +76,14 @@ goto :check_pip
 :no_venv
 echo        venv not available, installing directly ...
 
+:clear_proxy
+set HTTP_PROXY=
+set HTTPS_PROXY=
+set http_proxy=
+set https_proxy=
+set NO_PROXY=*
+set PIP_INDEX=--index-url https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn
+
 :check_pip
 echo        Checking pip ...
 %PIP_CMD% --version >nul 2>&1
@@ -86,9 +94,9 @@ if exist "get-pip-38.py" goto :run_get_pip
 echo        Downloading get-pip.py ...
 if exist "get-pip.py" del get-pip.py
 if exist "%SystemRoot%\System32\curl.exe" (
-    curl -sS -o get-pip-38.py https://bootstrap.pypa.io/pip/3.8/get-pip.py
+    curl -sS --noproxy "*" -o get-pip-38.py https://bootstrap.pypa.io/pip/3.8/get-pip.py
 ) else (
-    "%PYTHON_CMD%" -c "from urllib.request import urlretrieve; urlretrieve('https://bootstrap.pypa.io/pip/3.8/get-pip.py', 'get-pip-38.py')"
+    "%PYTHON_CMD%" -c "import os; os.environ['HTTP_PROXY']=''; os.environ['HTTPS_PROXY']=''; from urllib.request import urlretrieve; urlretrieve('https://bootstrap.pypa.io/pip/3.8/get-pip.py', 'get-pip-38.py')"
 )
 if not exist "get-pip-38.py" (
     echo        [ERROR] Could not download get-pip.py
@@ -98,7 +106,7 @@ if not exist "get-pip-38.py" (
     exit /b 1
 )
 :run_get_pip
-"%PYTHON_CMD%" get-pip-38.py
+"%PYTHON_CMD%" get-pip-38.py --index-url https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn
 if errorlevel 1 (
     echo        [ERROR] Failed to install pip!
     pause
@@ -109,11 +117,11 @@ echo        pip installed successfully.
 :pip_ok
 echo.
 echo        Upgrading pip ...
-%PIP_CMD% install --upgrade pip
+%PIP_CMD% install --upgrade pip %PIP_INDEX%
 
 echo.
 echo        Installing packages ...
-%PIP_CMD% install -r "%BASEDIR%apps\api\requirements.txt"
+%PIP_CMD% install -r "%BASEDIR%apps\api\requirements.txt" %PIP_INDEX%
 if errorlevel 1 (
     echo.
     echo        [ERROR] Failed to install packages!

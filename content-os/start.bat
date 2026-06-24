@@ -6,42 +6,108 @@ echo    Content OS - AI Content Production System
 echo ============================================
 echo.
 
-:: ========== Check Python ==========
+:: ========== Find Python ==========
 echo [1/6] Checking Python ...
-python --version >nul 2>&1
-IF ERRORLEVEL 1 (
-    echo [ERROR] Python not found. Please install Python 3.10+
-    echo Download: https://www.python.org/downloads/
-    echo Make sure to check "Add Python to PATH" during install.
-    pause
-    exit /b 1
-)
-for /f "tokens=2 delims= " %%v in ('python --version 2^>^&1') do echo        Python: %%v
+set PYTHON_CMD=
 
-:: ========== Check Node.js ==========
-echo [2/6] Checking Node.js ...
-node --version >nul 2>&1
-IF ERRORLEVEL 1 (
-    echo [ERROR] Node.js not found. Please install Node.js 18+
-    echo Download: https://nodejs.org/
+:: Try python
+python --version >nul 2>&1
+IF NOT ERRORLEVEL 1 set PYTHON_CMD=python
+
+:: Try python3
+IF "%PYTHON_CMD%"=="" (
+    python3 --version >nul 2>&1
+    IF NOT ERRORLEVEL 1 set PYTHON_CMD=python3
+)
+
+:: Try py launcher
+IF "%PYTHON_CMD%"=="" (
+    py --version >nul 2>&1
+    IF NOT ERRORLEVEL 1 set PYTHON_CMD=py
+)
+
+:: Try common install paths
+IF "%PYTHON_CMD%"=="" (
+    IF EXIST "C:\Python310\python.exe" set PYTHON_CMD=C:\Python310\python.exe
+)
+IF "%PYTHON_CMD%"=="" (
+    IF EXIST "C:\Python311\python.exe" set PYTHON_CMD=C:\Python311\python.exe
+)
+IF "%PYTHON_CMD%"=="" (
+    IF EXIST "C:\Python312\python.exe" set PYTHON_CMD=C:\Python312\python.exe
+)
+IF "%PYTHON_CMD%"=="" (
+    IF EXIST "C:\Python313\python.exe" set PYTHON_CMD=C:\Python313\python.exe
+)
+IF "%PYTHON_CMD%"=="" (
+    IF EXIST "%LOCALAPPDATA%\Programs\Python\Python310\python.exe" set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python310\python.exe
+)
+IF "%PYTHON_CMD%"=="" (
+    IF EXIST "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python311\python.exe
+)
+IF "%PYTHON_CMD%"=="" (
+    IF EXIST "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python312\python.exe
+)
+IF "%PYTHON_CMD%"=="" (
+    IF EXIST "%LOCALAPPDATA%\Programs\Python\Python313\python.exe" set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python313\python.exe
+)
+
+IF "%PYTHON_CMD%"=="" (
+    echo.
+    echo [ERROR] Python not found!
+    echo.
+    echo Please do ONE of the following:
+    echo   1. Reinstall Python and check "Add Python to PATH"
+    echo   2. Or install Python to C:\Python310\
+    echo   3. Or add Python folder to system PATH manually
+    echo.
+    echo Download: https://www.python.org/downloads/
+    echo.
     pause
     exit /b 1
 )
-for /f "tokens=1 delims= " %%v in ('node --version 2^>^&1') do echo        Node.js: %%v
+
+for /f "tokens=2 delims= " %%v in ('%PYTHON_CMD% --version 2^>^&1') do echo        Found Python: %%v  [%PYTHON_CMD%]
+
+:: ========== Find Node.js ==========
+echo [2/6] Checking Node.js ...
+set NODE_CMD=
+
+node --version >nul 2>&1
+IF NOT ERRORLEVEL 1 set NODE_CMD=node
+
+IF "%NODE_CMD%"=="" (
+    IF EXIST "C:\Program Files\nodejs\node.exe" set NODE_CMD=C:\Program Files\nodejs\node.exe
+)
+IF "%NODE_CMD%"=="" (
+    IF EXIST "C:\Program Files (x86)\nodejs\node.exe" set NODE_CMD=C:\Program Files (x86)\nodejs\node.exe
+)
+
+IF "%NODE_CMD%"=="" (
+    echo.
+    echo [ERROR] Node.js not found!
+    echo.
+    echo Please install Node.js 18+ from https://nodejs.org/
+    echo.
+    pause
+    exit /b 1
+)
+
+for /f "tokens=1 delims= " %%v in ('%NODE_CMD% --version 2^>^&1') do echo        Found Node.js: %%v
 
 :: ========== Set environment ==========
 echo [3/6] Setting environment ...
 set BASEDIR=%~dp0
 set PYTHONPATH=%BASEDIR%apps\api
 set DATABASE_URL=sqlite+aiosqlite:///./dev.db
-echo        Dir: %BASEDIR%
+echo        Work dir: %BASEDIR%
 
 :: ========== Install backend deps ==========
 echo [4/6] Installing backend dependencies ...
 IF NOT EXIST "%BASEDIR%apps\api\venv\Scripts\activate.bat" (
     echo        First run - creating virtual environment ...
     cd /d "%BASEDIR%apps\api"
-    python -m venv venv
+    "%PYTHON_CMD%" -m venv venv
     IF ERRORLEVEL 1 (
         echo [ERROR] Failed to create virtual environment.
         echo Make sure Python version >= 3.10
@@ -57,10 +123,10 @@ IF ERRORLEVEL 1 (
     exit /b 1
 )
 
-echo        Installing Python packages (may take a few minutes on first run)...
+echo        Installing Python packages (first run may take a few minutes)...
 pip install -r "%BASEDIR%apps\api\requirements.txt" --quiet 2>nul
 IF ERRORLEVEL 1 (
-    echo        [WARN] Some packages failed to install, trying to continue...
+    echo        [WARN] Some packages failed, trying to continue...
 )
 
 :: ========== Install frontend deps ==========

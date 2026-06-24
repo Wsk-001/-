@@ -82,14 +82,15 @@ echo        Checking pip ...
 if not errorlevel 1 goto :pip_ok
 echo        pip not found, installing pip ...
 cd /d "%BASEDIR%"
-if exist "get-pip.py" goto :run_get_pip
+if exist "get-pip-38.py" goto :run_get_pip
 echo        Downloading get-pip.py ...
+if exist "get-pip.py" del get-pip.py
 if exist "%SystemRoot%\System32\curl.exe" (
-    curl -sS -o get-pip.py https://bootstrap.pypa.io/pip/3.8/get-pip.py
+    curl -sS -o get-pip-38.py https://bootstrap.pypa.io/pip/3.8/get-pip.py
 ) else (
-    "%PYTHON_CMD%" -c "from urllib.request import urlretrieve; urlretrieve('https://bootstrap.pypa.io/pip/3.8/get-pip.py', 'get-pip.py')"
+    "%PYTHON_CMD%" -c "from urllib.request import urlretrieve; urlretrieve('https://bootstrap.pypa.io/pip/3.8/get-pip.py', 'get-pip-38.py')"
 )
-if not exist "get-pip.py" (
+if not exist "get-pip-38.py" (
     echo        [ERROR] Could not download get-pip.py
     echo        Please install pip manually or reinstall Python with pip.
     echo.
@@ -97,7 +98,7 @@ if not exist "get-pip.py" (
     exit /b 1
 )
 :run_get_pip
-"%PYTHON_CMD%" get-pip.py
+"%PYTHON_CMD%" get-pip-38.py
 if errorlevel 1 (
     echo        [ERROR] Failed to install pip!
     pause

@@ -66,7 +66,14 @@ if os.path.isdir(_WEB_DIR):
 @app.websocket("/api/ws/tasks/{task_id}")
 async def websocket_task_events(websocket: WebSocket, task_id: str):
     await websocket.accept()
-    import redis.asyncio as aioredis
+
+    try:
+        import redis.asyncio as aioredis
+    except ImportError:
+        await websocket.send_text(json.dumps({"event": "info", "data": {"message": "Redis not available, real-time updates disabled"}}))
+        await websocket.close()
+        return
+
     from core.config import settings
 
     redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
@@ -75,10 +82,6 @@ async def websocket_task_events(websocket: WebSocket, task_id: str):
     await pubsub.subscribe(channel)
 
     try:
-        # FIX: Use async for pubsub.listen() instead of while-loop with
-        # get_message(). The old get_message() call returns immediately
-        # when no message is available (timeout param is ignored by
-        # aioredis), causing a tight CPU-spin loop.
         async for message in pubsub.listen():
             if message is None:
                 continue

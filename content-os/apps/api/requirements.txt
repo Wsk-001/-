@@ -1,20 +1,26 @@
-fastapi>=0.115.0
-uvicorn[standard]>=0.30.6
+# Core - required for all setups
+fastapi>=0.109.0,<0.116.0
+uvicorn[standard]>=0.24.0
 sqlalchemy>=2.0.35
-asyncpg>=0.30.0
 aiosqlite>=0.20.0
-alembic>=1.13.2
-pydantic>=2.9.1
-pydantic-settings>=2.4.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
-bcrypt>=4.0.0
-httpx>=0.27.2
-celery[redis]>=5.4.0
-redis>=5.1.1
-boto3>=1.35.36
-python-multipart>=0.0.10
-websockets>=13.1
-openai>=1.51.0
-anthropic>=0.36.0
+httpx>=0.25.0
+python-multipart>=0.0.6
 jinja2>=3.1.4
+openai>=1.30.0
+
+# Optional - for PostgreSQL (not needed for SQLite)
+# asyncpg>=0.30.0
+
+# Optional - for background workers (requires Redis server)
+# celery[redis]>=5.4.0
+# redis>=5.1.1
+
+# Optional - for S3 storage
+# boto3>=1.35.36
+
+# Optional - for Anthropic Claude
+# anthropic>=0.36.0

@@ -13,7 +13,12 @@ router = APIRouter(tags=["websocket"])
 async def websocket_task_events(websocket: WebSocket, task_id: str):
     await websocket.accept()
 
-    import redis.asyncio as aioredis
+    try:
+        import redis.asyncio as aioredis
+    except ImportError:
+        await websocket.send_text(json.dumps({"event": "info", "data": {"message": "Redis not available, real-time updates disabled"}}))
+        await websocket.close()
+        return
 
     redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
     pubsub = redis_client.pubsub()
@@ -21,10 +26,16 @@ async def websocket_task_events(websocket: WebSocket, task_id: str):
     await pubsub.subscribe(channel)
 
     try:
-        while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-            if message and message["type"] == "message":
-                await websocket.send_text(message["data"])
+        async for message in pubsub.listen():
+            if message is None:
+                continue
+            msg_type = message.get("type")
+            if msg_type != "message":
+                continue
+            data = message.get("data")
+            if data is None:
+                continue
+            await websocket.send_text(data if isinstance(data, str) else data.decode("utf-8"))
     except WebSocketDisconnect:
         pass
     finally:

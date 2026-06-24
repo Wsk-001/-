@@ -141,6 +141,43 @@ async def cancel_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     return result.unique().scalar_one()
 
 
+@router.post("/{task_id}/run", response_model=TaskResponse)
+async def run_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Run a pipeline task synchronously (no Celery needed).
+
+    This is the simple execution path for setups without Redis/Celery.
+    For production with background workers, use the Celery task instead.
+    """
+    from core.event_bus import EventBus
+    from core.pipeline_engine import PipelineEngine
+    from core.step_registry import StepRegistry
+    from core.config import settings
+
+    result = await db.execute(
+        select(Task).options(selectinload(Task.steps)).where(Task.id == task_id)
+    )
+    task = result.unique().scalar_one_or_none()
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    if task.status not in ("queued", "failed"):
+        raise HTTPException(status_code=400, detail=f"Task is in '{task.status}' state, cannot run")
+
+    event_bus = EventBus(settings.REDIS_URL)
+    engine = PipelineEngine(db_session=db, step_registry=StepRegistry, event_bus=event_bus, storage=None)
+    try:
+        await engine.run_task(task_id)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+    finally:
+        await event_bus.close()
+
+    result = await db.execute(
+        select(Task).options(selectinload(Task.steps)).where(Task.id == task_id)
+    )
+    return result.unique().scalar_one()
+
+
 @router.post("/{task_id}/steps/{step_key}/run", response_model=TaskStepResponse)
 async def run_single_step(
     task_id: uuid.UUID,

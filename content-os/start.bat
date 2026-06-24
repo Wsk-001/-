@@ -43,22 +43,49 @@ if "%PYTHON_CMD%"=="" if exist "%BASEDIR%tools\python38\python.exe" set PYTHON_C
 
 if "%PYTHON_CMD%"=="" (
     echo.
-    echo [ERROR] Python not found!
+    echo [WARN] Python not found automatically.
     echo.
-    echo I searched these locations and found nothing:
-    echo   - PATH environment variable
-    echo   - C:\Python38\python.exe
-    echo   - C:\Python310\python.exe
-    echo   - %LOCALAPPDATA%\Programs\Python\Python38\python.exe
-    echo   - %LOCALAPPDATA%\Programs\Python\Python310\python.exe
+    echo Searching for python.exe on your computer ...
     echo.
-    echo Possible fixes:
-    echo   1. Restart your computer (PATH needs refresh after install)
-    echo   2. Or reinstall Python and CHECK "Add Python to PATH"
-    echo   3. Or tell me where you installed Python
+
+    :: Search C drive for python.exe
+    dir /s /b "C:\python.exe" 2>nul | findstr /i "python.exe" > "%TEMP%\pyfound.txt"
+    dir /s /b "C:\Users\python.exe" 2>nul | findstr /i "python.exe" >> "%TEMP%\pyfound.txt"
+
+    :: Show found results
+    if exist "%TEMP%\pyfound.txt" (
+        echo Found these python.exe:
+        echo.
+        type "%TEMP%\pyfound.txt"
+        echo.
+    ) else (
+        echo No python.exe found on C drive.
+        echo.
+    )
+    del "%TEMP%\pyfound.txt" >nul 2>&1
+
+    echo Please enter the full path to python.exe
+    echo Example: C:\Python38\python.exe
+    echo Or press Enter to exit:
     echo.
-    pause
-    exit
+    set /p PYTHON_CMD="Path to python.exe: "
+
+    if "%PYTHON_CMD%"=="" (
+        echo.
+        echo Cancelled.
+        pause
+        exit
+    )
+
+    if not exist "%PYTHON_CMD%" (
+        echo.
+        echo [ERROR] File not found: %PYTHON_CMD%
+        echo Please check the path and try again.
+        pause
+        exit
+    )
+
+    echo        Using: %PYTHON_CMD%
 )
 
 echo        Python found: %PYTHON_CMD%

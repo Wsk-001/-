@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import asyncio
-from typing import Any
-
 from adapters.article_lib_proxy import render_article
+from core.compat import to_thread
 from core.pipeline_engine import StepContext, StepResult
 from core.step_registry import StepRegistry
 from steps.base import StepExecutor
@@ -33,7 +31,7 @@ class RenderHtmlStep(StepExecutor):
             raise ValueError("article_json artifact is required")
 
         # render_article is CPU-bound (template parsing); run in a thread.
-        html_text = await asyncio.to_thread(render_article, article)
+        html_text = await to_thread(render_article, article)
 
         html_size = len(html_text.encode("utf-8"))
         template_name = article.get("template", "unknown") if isinstance(article, dict) else "unknown"

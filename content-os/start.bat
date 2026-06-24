@@ -25,11 +25,13 @@ for %%c in (python python3 py) do (
 
 :: Try common paths
 for %%p in (
+    "C:\Python38\python.exe"
     "C:\Python310\python.exe"
     "C:\Python311\python.exe"
     "C:\Python312\python.exe"
     "C:\Python313\python.exe"
     "C:\Python314\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python38\python.exe"
     "%LOCALAPPDATA%\Programs\Python\Python310\python.exe"
     "%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
     "%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
@@ -44,35 +46,32 @@ for %%p in (
 :: Auto-install Python if not found
 if "!PYTHON_CMD!"=="" (
     echo.
-    echo    Python not found. Auto-installing Python 3.12 ...
+    echo    Python not found. Auto-installing Python 3.8.20 (Win7 compatible) ...
     echo.
 
-    set PY_INSTALLER=%TEMP%\python-3.12.9-amd64.exe
-    set PY_URL=https://www.python.org/ftp/python/3.12.9/python-3.12.9-amd64.exe
-
-    echo    Downloading Python 3.12.9 ...
+    echo    Downloading Python 3.8.20 ...
 
     :: Try PowerShell first (faster)
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile('https://www.python.org/ftp/python/3.12.9/python-3.12.9-amd64.exe','%TEMP%\python-3.12.9-amd64.exe')" >nul 2>&1
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile('https://www.python.org/ftp/python/3.8.20/python-3.8.20-amd64.exe','%TEMP%\python-3.8.20-amd64.exe')" >nul 2>&1
 
     :: If PowerShell failed, try bitsadmin
-    if not exist "%TEMP%\python-3.12.9-amd64.exe" (
+    if not exist "%TEMP%\python-3.8.20-amd64.exe" (
         echo    PowerShell download failed, trying bitsadmin ...
-        bitsadmin /transfer pydownload /download /priority foreground "https://www.python.org/ftp/python/3.12.9/python-3.12.9-amd64.exe" "%TEMP%\python-3.12.9-amd64.exe" >nul 2>&1
+        bitsadmin /transfer pydownload /download /priority foreground "https://www.python.org/ftp/python/3.8.20/python-3.8.20-amd64.exe" "%TEMP%\python-3.8.20-amd64.exe" >nul 2>&1
     )
 
     :: If bitsadmin also failed, try certutil
-    if not exist "%TEMP%\python-3.12.9-amd64.exe" (
+    if not exist "%TEMP%\python-3.8.20-amd64.exe" (
         echo    bitsadmin failed, trying certutil ...
-        certutil -urlcache -split -f "https://www.python.org/ftp/python/3.12.9/python-3.12.9-amd64.exe" "%TEMP%\python-3.12.9-amd64.exe" >nul 2>&1
+        certutil -urlcache -split -f "https://www.python.org/ftp/python/3.8.20/python-3.8.20-amd64.exe" "%TEMP%\python-3.8.20-amd64.exe" >nul 2>&1
     )
 
-    if exist "%TEMP%\python-3.12.9-amd64.exe" (
+    if exist "%TEMP%\python-3.8.20-amd64.exe" (
         echo.
-        echo    Installing Python 3.12.9 (silent install, adding to PATH) ...
+        echo    Installing Python 3.8.20 (silent install, adding to PATH) ...
         echo    Please wait, this may take 1-2 minutes ...
         echo.
-        "%TEMP%\python-3.12.9-amd64.exe" /quiet InstallAllUsers=1 PrependPath=1 Include_pip=1 Include_launcher=1
+        "%TEMP%\python-3.8.20-amd64.exe" /quiet InstallAllUsers=1 PrependPath=1 Include_pip=1 Include_launcher=1
         if errorlevel 1 (
             echo.
             echo    [ERROR] Python installation failed.
@@ -83,7 +82,7 @@ if "!PYTHON_CMD!"=="" (
             exit /b 1
         )
         echo    Python installed successfully!
-        del "%TEMP%\python-3.12.9-amd64.exe" >nul 2>&1
+        del "%TEMP%\python-3.8.20-amd64.exe" >nul 2>&1
 
         :: Refresh PATH for current session
         set PYTHON_CMD=

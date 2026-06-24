@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import asyncio
-from typing import Any
-
 from adapters.article_lib_proxy import attach_missing_image_plans
+from core.compat import to_thread
 from core.pipeline_engine import StepContext, StepResult
 from core.step_registry import StepRegistry
 from steps.base import StepExecutor
@@ -39,7 +37,7 @@ class PlanImagesStep(StepExecutor):
 
         # attach_missing_image_plans mutates the article dict in place and
         # also returns it. Run in a thread since it does filesystem I/O.
-        updated_article = await asyncio.to_thread(
+        updated_article = await to_thread(
             attach_missing_image_plans,
             article,
             output_dir=output_dir,

@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import asyncio
-from typing import Any
-
 from adapters.article_lib_proxy import validate_article
+from core.compat import to_thread
 from core.pipeline_engine import StepContext, StepResult
 from core.step_registry import StepRegistry
 from steps.base import StepExecutor
@@ -35,7 +33,7 @@ class ValidateContentStep(StepExecutor):
         html_text = ctx.artifacts.get("html")
 
         # validate_article is CPU-bound; run in a thread.
-        validation = await asyncio.to_thread(
+        validation = await to_thread(
             validate_article, article, **({"html_text": html_text} if html_text else {})
         )
 

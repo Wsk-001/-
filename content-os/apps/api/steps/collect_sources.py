@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import asyncio
+from core.compat import to_thread
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
@@ -157,7 +157,7 @@ class CollectSourcesStep(StepExecutor):
         spec = {"sources": sources}
 
         # collect() uses synchronous urllib; run in a thread to avoid blocking.
-        source_bundle = await asyncio.to_thread(collect, spec, timeout, max_chars)
+        source_bundle = await to_thread(collect, spec, timeout, max_chars)
 
         logs = [
             f"Collected {source_bundle['count']} sources "

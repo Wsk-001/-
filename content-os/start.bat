@@ -85,9 +85,9 @@ cd /d "%BASEDIR%"
 if exist "get-pip.py" goto :run_get_pip
 echo        Downloading get-pip.py ...
 if exist "%SystemRoot%\System32\curl.exe" (
-    curl -sS -o get-pip.py https://bootstrap.pypa.io/get-pip.py
+    curl -sS -o get-pip.py https://bootstrap.pypa.io/pip/3.8/get-pip.py
 ) else (
-    "%PYTHON_CMD%" -c "from urllib.request import urlretrieve; urlretrieve('https://bootstrap.pypa.io/get-pip.py', 'get-pip.py')"
+    "%PYTHON_CMD%" -c "from urllib.request import urlretrieve; urlretrieve('https://bootstrap.pypa.io/pip/3.8/get-pip.py', 'get-pip.py')"
 )
 if not exist "get-pip.py" (
     echo        [ERROR] Could not download get-pip.py

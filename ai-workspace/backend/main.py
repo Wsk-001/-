@@ -107,7 +107,7 @@ async def chat(req: ChatRequest):
     messages = [
         {
             "role": "system",
-            "content": "You are a helpful AI assistant. Respond in the same language as the user's message.",
+            "content": "你是一个乐于助人的 AI 助手。请用与用户消息相同的语言进行回复。",
         },
         *history,
     ]

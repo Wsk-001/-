@@ -6,7 +6,7 @@ MVP: Streaming Chat with Session Memory
 import os
 import json
 import asyncio
-from typing import Optional
+from typing import Optional, Dict, List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -37,11 +37,11 @@ MAX_HISTORY = int(os.getenv("MAX_HISTORY", "20"))
 
 # ─── Session 存储（内存） ────────────────────────────────
 
-sessions: dict[str, list[dict]] = {}
+sessions: Dict[str, List[Dict]] = {}
 
 # ─── OpenAI 客户端（延迟初始化，无 key 时仍可启动） ──────
 
-client: AsyncOpenAI | None = None
+client: Optional[AsyncOpenAI] = None
 
 
 def get_client() -> AsyncOpenAI:

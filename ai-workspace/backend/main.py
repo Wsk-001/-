@@ -8,16 +8,20 @@ import json
 import asyncio
 from typing import Optional, Dict, List
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
+import pathlib
 
 load_dotenv()
 
 app = FastAPI(title="AI Workspace Chat API")
+
+# Static files directory
+STATIC_DIR = pathlib.Path(__file__).parent / "static"
 
 # CORS - 允许前端跨域访问
 app.add_middleware(
@@ -65,6 +69,14 @@ def get_client() -> AsyncOpenAI:
 class ChatRequest(BaseModel):
     message: str
     session_id: str
+
+
+# ─── 前端页面 ──────────────────────────────────────────
+
+@app.get("/")
+async def index():
+    """Serve the frontend HTML page"""
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 # ─── API 接口 ───────────────────────────────────────────

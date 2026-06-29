@@ -1,119 +1,119 @@
 @echo off
-chcp 65001 >nul 2>&1
 title AI Workspace
-
-:: AI Workspace 一键启动脚本 (Windows)
-:: 同时启动后端 FastAPI 和前端 Next.js
 
 set ROOT_DIR=%~dp0
 set BACKEND_DIR=%ROOT_DIR%backend
 set FRONTEND_DIR=%ROOT_DIR%frontend
 
 echo =====================================
-echo   AI Workspace 启动脚本
+echo   AI Workspace Launcher
 echo =====================================
 echo.
 
-:: ─── 检查 Python ──────────────────────────────────────
-echo [检查] Python ...
+:: Check Python
+echo [1/6] Checking Python...
 where python >nul 2>&1
 if errorlevel 1 (
-    echo [错误] 未找到 Python！请先安装 Python 3.10+
-    echo         下载地址: https://www.python.org/downloads/
-    echo         安装时务必勾选 "Add Python to PATH"
+    echo [ERROR] Python not found!
+    echo   Please install Python 3.10+ from https://www.python.org/downloads/
+    echo   Make sure to check "Add Python to PATH" during install.
     goto :fail
 )
 python --version
 echo.
 
-:: ─── 检查 Node.js ─────────────────────────────────────
-echo [检查] Node.js ...
+:: Check Node.js
+echo [2/6] Checking Node.js...
 where node >nul 2>&1
 if errorlevel 1 (
-    echo [错误] 未找到 Node.js！请先安装 Node.js 18+
-    echo         下载地址: https://nodejs.org/
+    echo [ERROR] Node.js not found!
+    echo   Please install Node.js 18+ from https://nodejs.org/
     goto :fail
 )
 node --version
 echo.
 
-:: ─── 检查目录 ─────────────────────────────────────────
+:: Check directories
+echo [3/6] Checking project files...
 if not exist "%BACKEND_DIR%" (
-    echo [错误] 未找到 backend 目录: %BACKEND_DIR%
+    echo [ERROR] backend folder not found: %BACKEND_DIR%
     goto :fail
 )
 if not exist "%FRONTEND_DIR%" (
-    echo [错误] 未找到 frontend 目录: %FRONTEND_DIR%
+    echo [ERROR] frontend folder not found: %FRONTEND_DIR%
     goto :fail
 )
+echo [OK] Project files found.
+echo.
 
-:: ─── 检查 .env ────────────────────────────────────────
+:: Check .env
 if not exist "%BACKEND_DIR%\.env" (
-    echo [提示] 未找到 backend\.env，从模板创建...
+    echo [NOTE] Creating .env from template...
     copy "%BACKEND_DIR%\.env.example" "%BACKEND_DIR%\.env" >nul
-    echo [重要] 请编辑 backend\.env 填入 OPENAI_API_KEY 后重新启动！
+    echo [IMPORTANT] Please edit backend\.env and set OPENAI_API_KEY!
     echo.
 )
 
-:: ─── 安装后端依赖 ─────────────────────────────────────
-echo [检查] 后端依赖...
+:: Install backend deps
+echo [4/6] Checking backend dependencies...
 cd /d "%BACKEND_DIR%"
 python -c "import fastapi" >nul 2>&1
 if errorlevel 1 (
-    echo [安装] 正在安装后端依赖，请稍候...
+    echo [INSTALL] Installing backend dependencies...
     pip install -r requirements.txt
     if errorlevel 1 (
-        echo [错误] 后端依赖安装失败！
+        echo [ERROR] Backend dependency install failed!
         goto :fail
     )
 ) else (
-    echo [完成] 后端依赖已就绪
+    echo [OK] Backend dependencies ready.
 )
 echo.
 
-:: ─── 安装前端依赖 ─────────────────────────────────────
-echo [检查] 前端依赖...
+:: Install frontend deps
+echo [5/6] Checking frontend dependencies...
 if not exist "%FRONTEND_DIR%\node_modules" (
-    echo [安装] 正在安装前端依赖，请稍候...
+    echo [INSTALL] Installing frontend dependencies...
     cd /d "%FRONTEND_DIR%"
     call npm install
     if errorlevel 1 (
-        echo [错误] 前端依赖安装失败！
+        echo [ERROR] Frontend dependency install failed!
         goto :fail
     )
 ) else (
-    echo [完成] 前端依赖已就绪
+    echo [OK] Frontend dependencies ready.
 )
 echo.
 
-:: ─── 启动后端 ─────────────────────────────────────────
-echo [启动] 后端 FastAPI (http://localhost:8000)...
-cd /d "%BACKEND_DIR%"
-start "AI Workspace - 后端" cmd /k "python main.py"
+:: Start backend
+echo [6/6] Starting services...
 echo.
+echo [START] Backend FastAPI (http://localhost:8000)
+cd /d "%BACKEND_DIR%"
+start "AI Workspace - Backend" cmd /k "python main.py"
 
-:: ─── 等待后端就绪 ─────────────────────────────────────
-echo [等待] 后端启动中，请稍候...
+:: Wait for backend
+echo [WAIT] Waiting for backend...
 timeout /t 4 /nobreak >nul
 
-:: ─── 启动前端 ─────────────────────────────────────────
-echo [启动] 前端 Next.js (http://localhost:3000)...
+:: Start frontend
+echo [START] Frontend Next.js (http://localhost:3000)
 cd /d "%FRONTEND_DIR%"
-start "AI Workspace - 前端" cmd /k "npx next dev -p 3000"
-echo.
+start "AI Workspace - Frontend" cmd /k "npx next dev -p 3000"
 
-:: ─── 等待前端就绪后打开浏览器 ─────────────────────────
-echo [等待] 前端启动中，5秒后打开浏览器...
+echo.
+echo [WAIT] Waiting for frontend...
 timeout /t 5 /nobreak >nul
 start http://localhost:3000
 
-echo =====================================
-echo   前端: http://localhost:3000
-echo   后端: http://localhost:8000
-echo   API:  http://localhost:8000/docs
 echo.
-echo   关闭弹出的窗口即可停止服务
-echo   本窗口可以安全关闭
+echo =====================================
+echo   Frontend: http://localhost:3000
+echo   Backend:  http://localhost:8000
+echo   API Docs: http://localhost:8000/docs
+echo.
+echo   Close the popup windows to stop.
+echo   This window can be closed safely.
 echo =====================================
 echo.
 goto :end
@@ -121,7 +121,7 @@ goto :end
 :fail
 echo.
 echo =====================================
-echo   启动失败！请检查上方错误信息
+echo   Startup failed! Check errors above.
 echo =====================================
 echo.
 pause

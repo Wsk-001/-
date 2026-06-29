@@ -12,9 +12,9 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
 from pydantic import BaseModel
-from openai import AsyncOpenAI
 from dotenv import load_dotenv
 import pathlib
+import httpx
 
 load_dotenv()
 
@@ -43,25 +43,56 @@ MAX_HISTORY = int(os.getenv("MAX_HISTORY", "20"))
 
 sessions: Dict[str, List[Dict]] = {}
 
-# ─── OpenAI 客户端（延迟初始化，无 key 时仍可启动） ──────
+# ─── OpenAI 客户端（使用 httpx 直接调用，绕过 SDK WAF 拦截） ──
 
-client: Optional[AsyncOpenAI] = None
+API_URL = OPENAI_BASE_URL.rstrip("/") + "/chat/completions"
 
 
-def get_client() -> AsyncOpenAI:
-    """获取 OpenAI 客户端，首次调用时初始化"""
-    global client
-    if client is None:
-        if not OPENAI_API_KEY:
-            raise HTTPException(
-                status_code=500,
-                detail="OPENAI_API_KEY not configured. Please set it in .env file.",
-            )
-        client = AsyncOpenAI(
-            api_key=OPENAI_API_KEY,
-            base_url=OPENAI_BASE_URL,
+async def call_llm_stream(messages):
+    """使用 httpx 直接调用 OpenAI 兼容 API（流式）"""
+    if not OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="OPENAI_API_KEY not configured. Please set it in .env file.",
         )
-    return client
+
+    headers = {
+        "Authorization": "Bearer " + OPENAI_API_KEY,
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": MODEL_NAME,
+        "messages": messages,
+        "stream": True,
+        "temperature": 0.7,
+        "max_tokens": 2048,
+    }
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        async with client.stream("POST", API_URL, headers=headers, json=payload) as resp:
+            if resp.status_code != 200:
+                body = await resp.aread()
+                error_text = body.decode("utf-8", errors="replace")
+                raise HTTPException(
+                    status_code=resp.status_code,
+                    detail="LLM API error: " + error_text,
+                )
+            async for line in resp.aiter_lines():
+                if not line or not line.startswith("data: "):
+                    continue
+                data_str = line[6:]
+                if data_str.strip() == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(data_str)
+                    if chunk.get("choices"):
+                        delta = chunk["choices"][0].get("delta", {})
+                        # 优先输出 content，忽略 reasoning_content（思维链）
+                        content = delta.get("content")
+                        if content:
+                            yield content
+                except json.JSONDecodeError:
+                    continue
 
 
 # ─── 数据模型 ───────────────────────────────────────────
@@ -89,21 +120,32 @@ async def health():
 @app.get("/debug")
 async def debug():
     """调试接口：检查 API 配置和连通性"""
-    import httpx
     result = {
         "model": MODEL_NAME,
         "base_url": OPENAI_BASE_URL,
+        "api_url": API_URL,
         "api_key_set": bool(OPENAI_API_KEY),
         "api_key_prefix": OPENAI_API_KEY[:8] + "..." if OPENAI_API_KEY and len(OPENAI_API_KEY) > 8 else "(empty)",
     }
     # 尝试连接测试
     if OPENAI_API_KEY:
         try:
-            client = get_client()
-            resp = await client.models.list()
-            model_ids = [m.id for m in resp.data][:5]
-            result["connection"] = "ok"
-            result["available_models"] = model_ids
+            headers = {
+                "Authorization": "Bearer " + OPENAI_API_KEY,
+            }
+            models_url = OPENAI_BASE_URL.rstrip("/") + "/models"
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(models_url, headers=headers)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    model_ids = [m["id"] for m in data.get("data", [])][:5]
+                    result["connection"] = "ok"
+                    result["available_models_count"] = len(data.get("data", []))
+                    result["sample_models"] = model_ids
+                else:
+                    result["connection"] = "http_error"
+                    result["status_code"] = resp.status_code
+                    result["error"] = resp.text[:300]
         except Exception as e:
             result["connection"] = "failed"
             result["error"] = str(e)
@@ -142,24 +184,11 @@ async def chat(req: ChatRequest):
     async def stream_generator():
         """生成流式响应"""
         try:
-            openai_client = get_client()
-            response = await openai_client.chat.completions.create(
-                model=MODEL_NAME,
-                messages=messages,
-                stream=True,
-                temperature=0.7,
-                max_tokens=2048,
-            )
-
             assistant_content = ""
-
-            async for chunk in response:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    token = chunk.choices[0].delta.content
-                    assistant_content += token
-                    # SSE 格式输出
-                    data = json.dumps({"token": token}, ensure_ascii=False)
-                    yield f"data: {data}\n\n"
+            async for token in call_llm_stream(messages):
+                assistant_content += token
+                data = json.dumps({"token": token}, ensure_ascii=False)
+                yield f"data: {data}\n\n"
 
             # 流结束，保存 assistant 回复到 session
             history.append({"role": "assistant", "content": assistant_content})
@@ -171,18 +200,7 @@ async def chat(req: ChatRequest):
             error_msg = json.dumps({"error": str(e.detail)}, ensure_ascii=False)
             yield f"data: {error_msg}\n\n"
         except Exception as e:
-            # 提取更详细的错误信息
-            err_str = str(e)
-            # OpenAI SDK 的错误通常包含更多信息
-            if hasattr(e, 'status_code'):
-                err_str = "HTTP %s: %s" % (e.status_code, err_str)
-            if hasattr(e, 'response'):
-                try:
-                    resp_body = await e.response.aread()
-                    err_str += "\n" + resp_body.decode('utf-8', errors='replace')
-                except Exception:
-                    pass
-            error_msg = json.dumps({"error": err_str}, ensure_ascii=False)
+            error_msg = json.dumps({"error": str(e)}, ensure_ascii=False)
             yield f"data: {error_msg}\n\n"
 
     return StreamingResponse(

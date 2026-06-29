@@ -172,10 +172,24 @@ async def get_session(session_id: str):
 
 if __name__ == "__main__":
     import uvicorn
+    import webbrowser
+    import threading
+
+    def open_browser():
+        import time
+        time.sleep(2)
+        webbrowser.open("http://localhost:8000")
+
+    threading.Thread(target=open_browser, daemon=True).start()
+
+    print("=" * 40)
+    print("  AI Workspace is running!")
+    print("  http://localhost:8000")
+    print("  Press Ctrl+C to stop")
+    print("=" * 40)
 
     uvicorn.run(
-        "main:app",
+        app,
         host="0.0.0.0",
         port=8000,
-        reload=False,
     )

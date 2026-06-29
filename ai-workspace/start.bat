@@ -43,22 +43,29 @@ if errorlevel 1 (
 )
 echo.
 
-:: Start server
+:: Start server (will auto-open browser)
 echo =====================================
 echo   Starting AI Workspace...
-echo   Open http://localhost:8000
+echo   Browser will open automatically
 echo   Press Ctrl+C to stop
 echo =====================================
 echo.
 
 python main.py
 
+if errorlevel 1 (
+    echo.
+    echo [ERROR] Server failed to start!
+    echo   Check the error messages above.
+    goto :fail
+)
+
 goto :end
 
 :fail
 echo.
 echo =====================================
-echo   Startup failed!
+echo   Startup failed! Check errors above.
 echo =====================================
 echo.
 pause

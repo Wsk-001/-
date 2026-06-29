@@ -86,6 +86,33 @@ async def health():
     return {"status": "ok", "model": MODEL_NAME}
 
 
+@app.get("/debug")
+async def debug():
+    """调试接口：检查 API 配置和连通性"""
+    import httpx
+    result = {
+        "model": MODEL_NAME,
+        "base_url": OPENAI_BASE_URL,
+        "api_key_set": bool(OPENAI_API_KEY),
+        "api_key_prefix": OPENAI_API_KEY[:8] + "..." if OPENAI_API_KEY and len(OPENAI_API_KEY) > 8 else "(empty)",
+    }
+    # 尝试连接测试
+    if OPENAI_API_KEY:
+        try:
+            client = get_client()
+            resp = await client.models.list()
+            model_ids = [m.id for m in resp.data][:5]
+            result["connection"] = "ok"
+            result["available_models"] = model_ids
+        except Exception as e:
+            result["connection"] = "failed"
+            result["error"] = str(e)
+    else:
+        result["connection"] = "no_api_key"
+
+    return result
+
+
 @app.post("/chat")
 async def chat(req: ChatRequest):
     """流式聊天接口：逐 token 返回 assistant 回复"""
@@ -115,7 +142,8 @@ async def chat(req: ChatRequest):
     async def stream_generator():
         """生成流式响应"""
         try:
-            response = await get_client().chat.completions.create(
+            openai_client = get_client()
+            response = await openai_client.chat.completions.create(
                 model=MODEL_NAME,
                 messages=messages,
                 stream=True,
@@ -139,8 +167,22 @@ async def chat(req: ChatRequest):
             # 发送结束标记
             yield f"data: {json.dumps({'done': True}, ensure_ascii=False)}\n\n"
 
+        except HTTPException as e:
+            error_msg = json.dumps({"error": str(e.detail)}, ensure_ascii=False)
+            yield f"data: {error_msg}\n\n"
         except Exception as e:
-            error_msg = json.dumps({"error": str(e)}, ensure_ascii=False)
+            # 提取更详细的错误信息
+            err_str = str(e)
+            # OpenAI SDK 的错误通常包含更多信息
+            if hasattr(e, 'status_code'):
+                err_str = "HTTP %s: %s" % (e.status_code, err_str)
+            if hasattr(e, 'response'):
+                try:
+                    resp_body = await e.response.aread()
+                    err_str += "\n" + resp_body.decode('utf-8', errors='replace')
+                except Exception:
+                    pass
+            error_msg = json.dumps({"error": err_str}, ensure_ascii=False)
             yield f"data: {error_msg}\n\n"
 
     return StreamingResponse(

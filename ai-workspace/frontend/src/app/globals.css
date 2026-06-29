@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #212121;
+  --bg-secondary: #2f2f2f;
+  --bg-input: #2f2f2f;
+  --text-primary: #ececec;
+  --text-secondary: #b4b4b4;
+  --border-color: #424242;
+  --accent: #10a37f;
+  --accent-hover: #1a7f64;
+  --user-bubble: #2f2f2f;
+  --assistant-bubble: transparent;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Söhne', 'ui-sans-serif', 'system-ui', -apple-system, sans-serif;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #424242;
+  border-radius: 3px;
+}
+
+/* Markdown 渲染样式 */
+.prose-chat {
+  line-height: 1.7;
+}
+.prose-chat p {
+  margin-bottom: 0.75rem;
+}
+.prose-chat p:last-child {
+  margin-bottom: 0;
+}
+.prose-chat pre {
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+.prose-chat code {
+  font-family: 'Söhne Mono', 'Monaco', 'Andale Mono', monospace;
+  font-size: 0.875rem;
+}
+.prose-chat :not(pre) > code {
+  background-color: #3a3a3a;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+.prose-chat ul, .prose-chat ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.prose-chat li {
+  margin: 0.25rem 0;
+}
+.prose-chat h1, .prose-chat h2, .prose-chat h3 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+/* 流式光标动画 */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+.streaming-cursor::after {
+  content: '▋';
+  animation: blink 1s infinite;
+  color: var(--accent);
+  margin-left: 1px;
+}

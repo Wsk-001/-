@@ -65,10 +65,10 @@ async def call_llm_stream(messages):
         "messages": messages,
         "stream": True,
         "temperature": 0.7,
-        "max_tokens": 2048,
+        "max_tokens": 8192,
     }
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=120.0) as client:
         async with client.stream("POST", API_URL, headers=headers, json=payload) as resp:
             if resp.status_code != 200:
                 body = await resp.aread()
@@ -87,7 +87,11 @@ async def call_llm_stream(messages):
                     chunk = json.loads(data_str)
                     if chunk.get("choices"):
                         delta = chunk["choices"][0].get("delta", {})
-                        # 优先输出 content，忽略 reasoning_content（思维链）
+                        # 输出思维链内容（reasoning_content）
+                        reasoning = delta.get("reasoning_content")
+                        if reasoning:
+                            yield reasoning
+                        # 输出正式回复内容
                         content = delta.get("content")
                         if content:
                             yield content
